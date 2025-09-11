@@ -111,14 +111,18 @@ st.markdown("""
     /* Metric Cards */
     .metric-card {
         background: white;
-        padding: 2rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border: 1px solid #f0f2f6;
-        margin-bottom: 1.5rem;
-        transition: all 0.3s ease;
+        padding: 1.25rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
         position: relative;
         overflow: hidden;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     
     .metric-card::before {
@@ -127,13 +131,14 @@ st.markdown("""
         top: 0;
         left: 0;
         right: 0;
-        height: 4px;
+        height: 3px;
         background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     }
     
     .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        border-color: #667eea;
     }
     
     /* Section Headers */
@@ -160,16 +165,17 @@ st.markdown("""
     /* Content Cards */
     .content-card {
         background: white;
-        padding: 2rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-        border: 1px solid #f0f2f6;
-        margin-bottom: 1.5rem;
-        transition: all 0.3s ease;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
     }
     
     .content-card:hover {
-        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        border-color: #667eea;
     }
     
     /* Sidebar Styling */
@@ -826,28 +832,34 @@ with col1:
     if supabase_url and supabase_key:
         st.markdown("""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">☁️</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">☁️</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Cloud Storage</h3>
+                        <p style="margin: 0; color: #48bb78; font-size: 0.75rem; font-weight: 500;">Active</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Cloud Storage</h3>
-                    <p style="margin: 0; color: #48bb78; font-size: 0.85rem; font-weight: 500;">Active & Synchronized</p>
-                </div>
+                <div style="width: 8px; height: 8px; background: #48bb78; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">⚠️</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">⚠️</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Local Only</h3>
+                        <p style="margin: 0; color: #ed8936; font-size: 0.75rem; font-weight: 500;">Temporary</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Local Only</h3>
-                    <p style="margin: 0; color: #ed8936; font-size: 0.85rem; font-weight: 500;">Data will be lost on restart</p>
-                </div>
+                <div style="width: 8px; height: 8px; background: #ed8936; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -857,34 +869,38 @@ with col2:
         transcripts = load_transcripts_from_supabase()
         st.markdown(f"""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">📝</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">📝</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Transcripts</h3>
+                        <p style="margin: 0; color: #667eea; font-size: 0.75rem; font-weight: 500;">Available</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Transcripts</h3>
-                    <p style="margin: 0; color: #667eea; font-size: 0.85rem; font-weight: 500;">Available</p>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #667eea; line-height: 1;">{len(transcripts)}</div>
                 </div>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 2.5rem; font-weight: 800; color: #667eea;">{len(transcripts)}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
     except:
         st.markdown("""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">📝</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">📝</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Transcripts</h3>
+                        <p style="margin: 0; color: #667eea; font-size: 0.75rem; font-weight: 500;">Available</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Transcripts</h3>
-                    <p style="margin: 0; color: #667eea; font-size: 0.85rem; font-weight: 500;">Available</p>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #667eea; line-height: 1;">0</div>
                 </div>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 2.5rem; font-weight: 800; color: #667eea;">0</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -894,34 +910,38 @@ with col3:
         posts = load_posts_from_supabase()
         st.markdown(f"""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">📱</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">📱</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">LinkedIn Posts</h3>
+                        <p style="margin: 0; color: #9f7aea; font-size: 0.75rem; font-weight: 500;">Generated</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">LinkedIn Posts</h3>
-                    <p style="margin: 0; color: #9f7aea; font-size: 0.85rem; font-weight: 500;">Generated</p>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #9f7aea; line-height: 1;">{len(posts)}</div>
                 </div>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 2.5rem; font-weight: 800; color: #9f7aea;">{len(posts)}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
     except:
         st.markdown("""
         <div class="metric-card">
-            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
-                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
-                    <span style="color: white; font-size: 1.2rem;">📱</span>
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center;">
+                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                        <span style="color: white; font-size: 1rem;">📱</span>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">LinkedIn Posts</h3>
+                        <p style="margin: 0; color: #9f7aea; font-size: 0.75rem; font-weight: 500;">Generated</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">LinkedIn Posts</h3>
-                    <p style="margin: 0; color: #9f7aea; font-size: 0.85rem; font-weight: 500;">Generated</p>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #9f7aea; line-height: 1;">0</div>
                 </div>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 2.5rem; font-weight: 800; color: #9f7aea;">0</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
