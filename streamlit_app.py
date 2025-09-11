@@ -153,18 +153,19 @@ st.markdown("""
     
     /* Content Cards */
     .content-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 1rem;
+        background: #374151;
+        padding: 0.75rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        border: 1px solid #4b5563;
+        margin-bottom: 0.5rem;
         transition: all 0.2s ease;
     }
     
     .content-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         border-color: #4f46e5;
+        background: #4b5563;
     }
     
     /* Sidebar Styling */
@@ -259,11 +260,11 @@ st.markdown("""
     
     /* Content Display */
     .content-display {
-        background: #f8fafc;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #4f46e5;
-        margin: 0.5rem 0;
+        background: #374151;
+        padding: 0.5rem;
+        border-radius: 6px;
+        border-left: 3px solid #4f46e5;
+        margin: 0.25rem 0;
     }
     
     /* Footer */
@@ -815,11 +816,11 @@ with cols[0]:
             
             st.markdown(f"""
             <div class="content-display">
-                <h4 style="margin: 0 0 0.5rem 0; color: #2d3748; font-weight: 600;">{episode_title}</h4>
-                <p style="margin: 0 0 1rem 0; color: #718096; font-size: 0.9rem;">Saved: {date_str}</p>
+                <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+                <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.code(transcript_content[:20000], language="text")
+            st.code(transcript_content[:5000], language="text", height=200)
 
 # Right: posts list
 with cols[1]:
@@ -868,8 +869,8 @@ with cols[1]:
             
             st.markdown(f"""
             <div class="content-display">
-                <h4 style="margin: 0 0 0.5rem 0; color: #2d3748; font-weight: 600;">{episode_title}</h4>
-                <p style="margin: 0 0 1rem 0; color: #718096; font-size: 0.9rem;">Saved: {date_str}</p>
+                <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+                <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -879,13 +880,13 @@ with cols[1]:
                 for i, post in enumerate(posts_list, 1):
                     if post.strip():
                         st.markdown(f"""
-                        <div style="background: #f7fafc; padding: 1.5rem; border-radius: 12px; margin: 1rem 0; border-left: 4px solid #9f7aea;">
-                            <h4 style="margin: 0 0 1rem 0; color: #9f7aea; font-weight: 600;">Post {i}</h4>
+                        <div style="background: #374151; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0; border-left: 3px solid #c4b5fd;">
+                            <h4 style="margin: 0 0 0.5rem 0; color: #c4b5fd; font-weight: 600; font-size: 0.9rem;">Post {i}</h4>
                         </div>
                         """, unsafe_allow_html=True)
-                        st.markdown(post.strip())
+                        st.markdown(post.strip()[:1000] + "..." if len(post.strip()) > 1000 else post.strip())
                         if i < len(posts_list):
-                            st.divider()
+                            st.markdown("---")
             else:
                 st.markdown("No content available")
 
