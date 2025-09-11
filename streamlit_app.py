@@ -149,6 +149,64 @@ except Exception as e:
     st.code(traceback.format_exc())
     st.warning("Some features may not work. Check the error above.")
 
+def load_transcripts_from_supabase():
+    """Load transcripts from Supabase"""
+    try:
+        from src.storage import build_supabase_client
+        
+        # Check if Supabase is configured
+        supabase_url = st.secrets.get("SUPABASE_URL")
+        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+        
+        if not (supabase_url and supabase_key):
+            return []
+        
+        # Build Supabase client
+        supabase_client = build_supabase_client(supabase_url, supabase_key)
+        if not supabase_client:
+            return []
+        
+        # Load transcripts from Supabase
+        result = supabase_client.table("podcast_transcripts").select("*").order("created_at", desc=True).execute()
+        
+        if result.data:
+            return result.data
+        else:
+            return []
+            
+    except Exception as e:
+        st.error(f"❌ Error loading transcripts from Supabase: {e}")
+        return []
+
+def load_posts_from_supabase():
+    """Load posts from Supabase"""
+    try:
+        from src.storage import build_supabase_client
+        
+        # Check if Supabase is configured
+        supabase_url = st.secrets.get("SUPABASE_URL")
+        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+        
+        if not (supabase_url and supabase_key):
+            return []
+        
+        # Build Supabase client
+        supabase_client = build_supabase_client(supabase_url, supabase_key)
+        if not supabase_client:
+            return []
+        
+        # Load posts from Supabase
+        result = supabase_client.table("podcast_posts").select("*").order("created_at", desc=True).execute()
+        
+        if result.data:
+            return result.data
+        else:
+            return []
+            
+    except Exception as e:
+        st.error(f"❌ Error loading posts from Supabase: {e}")
+        return []
+
 def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: int, openai_key: str):
     """Save user configuration to Supabase"""
     try:
@@ -580,10 +638,21 @@ if "running_process" in st.session_state and st.session_state["running_process"]
         st.rerun()
 
 # Supabase Status
-if st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"):
-    st.success("☁️ Supabase storage enabled - files will be permanently stored")
+supabase_url = st.secrets.get("SUPABASE_URL")
+supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+
+if supabase_url and supabase_key:
+    st.success("☁️ Supabase storage enabled - data is permanently stored and synchronized")
+    
+    # Show data counts
+    try:
+        transcripts = load_transcripts_from_supabase()
+        posts = load_posts_from_supabase()
+        st.info(f"📊 Database contains: {len(transcripts)} transcripts, {len(posts)} LinkedIn posts")
+    except:
+        pass
 else:
-    st.info("💾 Local storage only - files will be lost when instance restarts")
+    st.warning("⚠️ Supabase not configured - data will be lost when instance restarts")
 
 # Main content
 cols = st.columns(2)
@@ -591,30 +660,103 @@ cols = st.columns(2)
 # Left: transcripts list
 with cols[0]:
     st.subheader("📝 Transcripts")
-    transcript_files = sorted(TRANSCRIPTS_DIR.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not transcript_files:
+    
+    # Load transcripts from Supabase
+    transcripts = load_transcripts_from_supabase()
+    
+    if not transcripts:
         st.info("No transcripts yet.")
     else:
-        selected = st.selectbox("Select transcript", [p.name for p in transcript_files])
-        if selected:
-            path = TRANSCRIPTS_DIR / selected
-            meta = path.stat()
-            st.caption(f"Saved: {datetime.fromtimestamp(meta.st_mtime).strftime('%Y-%m-%d %H:%M:%S')}")
-            st.code(path.read_text(encoding="utf-8")[:20000])
+        # Create options for selectbox
+        transcript_options = []
+        for transcript in transcripts:
+            episode_title = transcript.get('episode_title', 'Unknown Episode')
+            created_at = transcript.get('created_at', '')
+            if created_at:
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    date_str = created_at
+            else:
+                date_str = 'Unknown date'
+            
+            transcript_options.append(f"{episode_title} ({date_str})")
+        
+        selected_idx = st.selectbox("Select transcript", range(len(transcript_options)), format_func=lambda x: transcript_options[x])
+        
+        if selected_idx is not None and selected_idx < len(transcripts):
+            selected_transcript = transcripts[selected_idx]
+            episode_title = selected_transcript.get('episode_title', 'Unknown Episode')
+            transcript_content = selected_transcript.get('transcript_text', 'No content available')
+            created_at = selected_transcript.get('created_at', '')
+            
+            if created_at:
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    date_str = created_at
+            else:
+                date_str = 'Unknown date'
+            
+            st.caption(f"Episode: {episode_title}")
+            st.caption(f"Saved: {date_str}")
+            st.code(transcript_content[:20000])
 
 # Right: posts list
 with cols[1]:
     st.subheader("📱 LinkedIn Drafts")
-    post_files = sorted(POSTS_DIR.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not post_files:
+    
+    # Load posts from Supabase
+    posts = load_posts_from_supabase()
+    
+    if not posts:
         st.info("No drafts yet.")
     else:
-        selected_post = st.selectbox("Select draft", [p.name for p in post_files])
-        if selected_post:
-            p = POSTS_DIR / selected_post
-            meta = p.stat()
-            st.caption(f"Saved: {datetime.fromtimestamp(meta.st_mtime).strftime('%Y-%m-%d %H:%M:%S')}")
-            st.markdown(p.read_text(encoding="utf-8")[:20000])
+        # Create options for selectbox
+        post_options = []
+        for post in posts:
+            episode_title = post.get('episode_title', 'Unknown Episode')
+            post_type = post.get('post_type', 'Unknown Type')
+            created_at = post.get('created_at', '')
+            if created_at:
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    date_str = created_at
+            else:
+                date_str = 'Unknown date'
+            
+            post_options.append(f"{post_type} - {episode_title} ({date_str})")
+        
+        selected_post_idx = st.selectbox("Select draft", range(len(post_options)), format_func=lambda x: post_options[x])
+        
+        if selected_post_idx is not None and selected_post_idx < len(posts):
+            selected_post = posts[selected_post_idx]
+            episode_title = selected_post.get('episode_title', 'Unknown Episode')
+            post_type = selected_post.get('post_type', 'Unknown Type')
+            post_content = selected_post.get('post_content', 'No content available')
+            created_at = selected_post.get('created_at', '')
+            
+            if created_at:
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    date_str = created_at
+            else:
+                date_str = 'Unknown date'
+            
+            st.caption(f"Episode: {episode_title}")
+            st.caption(f"Type: {post_type}")
+            st.caption(f"Saved: {date_str}")
+            st.markdown(post_content[:20000])
 
 # Run logs (persisted)
 st.divider()
