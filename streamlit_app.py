@@ -155,14 +155,19 @@ def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: i
         from src.storage import build_supabase_client
         
         # Check if Supabase is configured
-        if not (st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY")):
+        supabase_url = st.secrets.get("SUPABASE_URL")
+        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+        
+        if not (supabase_url and supabase_key):
             st.warning("⚠️ Supabase not configured - configuration not saved")
+            st.info(f"🔍 Found SUPABASE_URL: {'Yes' if supabase_url else 'No'}")
+            st.info(f"🔍 Found SUPABASE_SERVICE_ROLE_KEY: {'Yes' if supabase_key else 'No'}")
             return False
         
         # Build Supabase client
         supabase_client = build_supabase_client(
-            st.secrets["SUPABASE_URL"],
-            st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+            supabase_url,
+            supabase_key
         )
         
         if not supabase_client:
