@@ -165,14 +165,35 @@ def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: i
             return False
         
         # Build Supabase client
-        supabase_client = build_supabase_client(
-            supabase_url,
-            supabase_key
-        )
+        st.info(f"🔧 Building Supabase client...")
+        st.info(f"🔧 URL: {supabase_url[:20]}..." if supabase_url else "🔧 URL: None")
+        st.info(f"🔧 Key: {supabase_key[:20]}..." if supabase_key else "🔧 Key: None")
         
-        if not supabase_client:
-            st.error("❌ Failed to connect to Supabase")
+        try:
+            supabase_client = build_supabase_client(
+                supabase_url,
+                supabase_key
+            )
+            
+            if not supabase_client:
+                st.error("❌ Failed to connect to Supabase - build_supabase_client returned None")
+                return False
+            else:
+                st.info("✅ Supabase client built successfully")
+                
+        except Exception as e:
+            st.error(f"❌ Exception building Supabase client: {str(e)}")
             return False
+        
+        # Test Supabase connection first
+        try:
+            st.info("🔍 Testing Supabase connection...")
+            # Try to query a simple table to test connection
+            result = supabase_client.table("podcast_transcripts").select("id").limit(1).execute()
+            st.info("✅ Supabase connection test successful")
+        except Exception as e:
+            st.warning(f"⚠️ Supabase connection test failed: {str(e)}")
+            st.info("🔧 This might be normal if tables don't exist yet")
         
         # Save configuration
         success = save_user_config(
