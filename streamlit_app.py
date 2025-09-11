@@ -4,8 +4,82 @@ import subprocess
 import sys
 from datetime import datetime
 import traceback
+import hashlib
+import hmac
+import time
 
 import streamlit as st
+
+# Security configuration
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # "password" hashed with SHA-256
+SESSION_TIMEOUT = 3600  # 1 hour in seconds
+
+def hash_password(password: str) -> str:
+    """Hash a password using SHA-256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify a password against its hash"""
+    return hmac.compare_digest(hash_password(password), password_hash)
+
+def is_authenticated() -> bool:
+    """Check if user is authenticated and session is valid"""
+    if "authenticated" not in st.session_state:
+        return False
+    
+    if "login_time" not in st.session_state:
+        return False
+    
+    # Check if session has expired
+    if time.time() - st.session_state.login_time > SESSION_TIMEOUT:
+        # Clear session
+        for key in ["authenticated", "login_time", "username"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        return False
+    
+    return st.session_state.authenticated
+
+def login_form():
+    """Display login form"""
+    st.title("🔐 Secure Access Required")
+    st.markdown("---")
+    
+    with st.form("login_form"):
+        st.subheader("Login to Podcast Transcript Puller")
+        
+        username = st.text_input("Username", placeholder="Enter your username")
+        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            login_button = st.form_submit_button("🔑 Login", use_container_width=True)
+        with col2:
+            if st.form_submit_button("❌ Cancel", use_container_width=True):
+                st.stop()
+        
+        if login_button:
+            if username == ADMIN_USERNAME and verify_password(password, ADMIN_PASSWORD_HASH):
+                st.session_state.authenticated = True
+                st.session_state.login_time = time.time()
+                st.session_state.username = username
+                st.success("✅ Login successful!")
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password")
+    
+    st.markdown("---")
+    st.caption("🔒 This application is protected. Contact the administrator for access.")
+
+def logout_button():
+    """Display logout button in sidebar"""
+    if st.sidebar.button("🚪 Logout", use_container_width=True):
+        # Clear all session state
+        for key in ["authenticated", "login_time", "username"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
 
 # Set page config first
 st.set_page_config(
@@ -13,6 +87,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Main authentication check
+if not is_authenticated():
+    login_form()
+    st.stop()
+
+# User is authenticated - show logout button and continue with main app
+logout_button()
 
 st.title("🎙️ Podcast Transcripts & LinkedIn Drafts")
 st.markdown("**Automatically pull podcast episodes, transcribe them, and generate LinkedIn post drafts**")
