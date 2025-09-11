@@ -285,6 +285,69 @@ with st.sidebar:
         else:
             eps, drafts = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
             confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
+    
+    # Clear Data Button
+    st.divider()
+    st.subheader("🗑️ Clear Data")
+    if st.button("Clear All Local Data", type="secondary"):
+        try:
+            # Clear local files
+            import shutil
+            if TRANSCRIPTS_DIR.exists():
+                shutil.rmtree(TRANSCRIPTS_DIR)
+                TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+            if POSTS_DIR.exists():
+                shutil.rmtree(POSTS_DIR)
+                POSTS_DIR.mkdir(parents=True, exist_ok=True)
+            
+            # Clear state file
+            state_file = DATA_DIR / "state.json"
+            if state_file.exists():
+                state_file.unlink()
+            
+            st.success("✅ All local data cleared! You can now test from scratch.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Error clearing data: {e}")
+    
+    # Clear Supabase Data Button (if configured)
+    if st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"):
+        if st.button("Clear Supabase Data", type="secondary"):
+            try:
+                # Clear Supabase tables
+                import subprocess
+                import sys
+                
+                env = {
+                    "SUPABASE_URL": st.secrets["SUPABASE_URL"],
+                    "SUPABASE_SERVICE_ROLE_KEY": st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+                }
+                
+                # Run a script to clear Supabase data
+                result = subprocess.run([
+                    sys.executable, "-c", """
+import os
+from supabase import create_client
+
+url = os.getenv('SUPABASE_URL')
+key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+client = create_client(url, key)
+
+# Clear tables
+client.table('podcast_transcripts').delete().neq('id', 0).execute()
+client.table('podcast_posts').delete().neq('id', 0).execute()
+
+print('Supabase data cleared successfully')
+"""
+                ], env={**os.environ, **env}, capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    st.success("✅ Supabase data cleared! All transcripts and posts removed from database.")
+                else:
+                    st.error(f"❌ Error clearing Supabase data: {result.stderr}")
+                    
+            except Exception as e:
+                st.error(f"❌ Error clearing Supabase data: {e}")
 
 # Process monitoring section
 if "running_process" in st.session_state and st.session_state["running_process"]:
