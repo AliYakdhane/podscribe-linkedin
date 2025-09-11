@@ -670,7 +670,7 @@ with cols[0]:
         # Create options for selectbox
         transcript_options = []
         for transcript in transcripts:
-            episode_title = transcript.get('episode_title', 'Unknown Episode')
+            episode_title = transcript.get('title', 'Unknown Episode')
             created_at = transcript.get('created_at', '')
             if created_at:
                 try:
@@ -688,8 +688,8 @@ with cols[0]:
         
         if selected_idx is not None and selected_idx < len(transcripts):
             selected_transcript = transcripts[selected_idx]
-            episode_title = selected_transcript.get('episode_title', 'Unknown Episode')
-            transcript_content = selected_transcript.get('transcript_text', 'No content available')
+            episode_title = selected_transcript.get('title', 'Unknown Episode')
+            transcript_content = selected_transcript.get('transcript_content', 'No content available')
             created_at = selected_transcript.get('created_at', '')
             
             if created_at:
@@ -719,8 +719,7 @@ with cols[1]:
         # Create options for selectbox
         post_options = []
         for post in posts:
-            episode_title = post.get('episode_title', 'Unknown Episode')
-            post_type = post.get('post_type', 'Unknown Type')
+            episode_title = post.get('title', 'Unknown Episode')
             created_at = post.get('created_at', '')
             if created_at:
                 try:
@@ -732,15 +731,14 @@ with cols[1]:
             else:
                 date_str = 'Unknown date'
             
-            post_options.append(f"{post_type} - {episode_title} ({date_str})")
+            post_options.append(f"{episode_title} ({date_str})")
         
         selected_post_idx = st.selectbox("Select draft", range(len(post_options)), format_func=lambda x: post_options[x])
         
         if selected_post_idx is not None and selected_post_idx < len(posts):
             selected_post = posts[selected_post_idx]
-            episode_title = selected_post.get('episode_title', 'Unknown Episode')
-            post_type = selected_post.get('post_type', 'Unknown Type')
-            post_content = selected_post.get('post_content', 'No content available')
+            episode_title = selected_post.get('title', 'Unknown Episode')
+            posts_content = selected_post.get('posts_content', 'No content available')
             created_at = selected_post.get('created_at', '')
             
             if created_at:
@@ -754,9 +752,19 @@ with cols[1]:
                 date_str = 'Unknown date'
             
             st.caption(f"Episode: {episode_title}")
-            st.caption(f"Type: {post_type}")
             st.caption(f"Saved: {date_str}")
-            st.markdown(post_content[:20000])
+            
+            # Split posts content and display each post separately
+            if posts_content and posts_content != 'No content available':
+                posts_list = posts_content.split('---')
+                for i, post in enumerate(posts_list, 1):
+                    if post.strip():
+                        st.subheader(f"Post {i}")
+                        st.markdown(post.strip())
+                        if i < len(posts_list):
+                            st.divider()
+            else:
+                st.markdown("No content available")
 
 # Run logs (persisted)
 st.divider()
