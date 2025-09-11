@@ -3,17 +3,51 @@ from pathlib import Path
 import subprocess
 import sys
 from datetime import datetime
+import traceback
 
 import streamlit as st
+
+# Set page config first
+st.set_page_config(
+    page_title="Podcast Transcripts & Posts", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+st.title("🎙️ Podcast Transcripts & LinkedIn Drafts")
+st.markdown("**Automatically pull podcast episodes, transcribe them, and generate LinkedIn post drafts**")
+
+# Initialize session state
+if "last_run_output" not in st.session_state:
+    st.session_state["last_run_output"] = ""
+if "last_run_success" not in st.session_state:
+    st.session_state["last_run_success"] = False
+if "last_run_time" not in st.session_state:
+    st.session_state["last_run_time"] = ""
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.getenv("DATA_DIR", PROJECT_ROOT / "data"))
 TRANSCRIPTS_DIR = Path(os.getenv("TRANSCRIPTS_DIR", DATA_DIR / "transcripts"))
 POSTS_DIR = Path(os.getenv("POSTS_DIR", DATA_DIR / "posts"))
 
+# Create directories
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+POSTS_DIR.mkdir(parents=True, exist_ok=True)
+
 # Allow importing project modules
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
+
+# Try to import modules with better error handling
+load_config = None
+lookup_feed_url_via_itunes = None
+parse_feed_entries = None
+sort_episodes = None
+extract_show_id_from_apple_url = None
+extract_episode_id_from_apple_url = None
+lookup_episode_release_and_show_id = None
+StateStore = None
 
 try:
     from src.config import load_config
@@ -26,13 +60,11 @@ try:
         lookup_episode_release_and_show_id,
     )
     from src.storage import StateStore
-except Exception:
-    load_config = None
-
-st.set_page_config(page_title="Podcast Transcripts & Posts", layout="wide")
-
-st.title("🎙️ Podcast Transcripts & LinkedIn Drafts")
-st.markdown("**Automatically pull podcast episodes, transcribe them, and generate LinkedIn post drafts**")
+    st.success("✅ All modules imported successfully!")
+except Exception as e:
+    st.error(f"❌ Import error: {str(e)}")
+    st.code(traceback.format_exc())
+    st.warning("Some features may not work. Check the error above.")
 
 # Dialog to confirm pull
 @st.dialog("Confirm Pull")
@@ -61,14 +93,36 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                     env["SHOW_ID"] = show_id_override
                 if url_override:
                     env["APPLE_EPISODE_URL"] = url_override
-                result = subprocess.run([sys.executable, "-m", "src.main"], cwd=str(PROJECT_ROOT), env={**os.environ, **env}, capture_output=True, text=True, timeout=60*30)
+                
+                with st.spinner("Running podcast pull..."):
+                    result = subprocess.run(
+                        [sys.executable, "-m", "src.main"], 
+                        cwd=str(PROJECT_ROOT), 
+                        env={**os.environ, **env}, 
+                        capture_output=True, 
+                        text=True, 
+                        timeout=60*30
+                    )
+                
                 st.session_state["last_run_output"] = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
                 st.session_state["last_run_success"] = (result.returncode == 0)
                 st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
-            except Exception as ex:
-                st.session_state["last_run_output"] = f"Run failed: {ex}"
+                
+                if result.returncode == 0:
+                    st.success("✅ Run completed successfully!")
+                else:
+                    st.error("❌ Run failed!")
+                    
+            except subprocess.TimeoutExpired:
+                st.session_state["last_run_output"] = "Run timed out after 30 minutes"
                 st.session_state["last_run_success"] = False
                 st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
+                st.error("❌ Run timed out!")
+            except Exception as ex:
+                st.session_state["last_run_output"] = f"Run failed: {ex}\n{traceback.format_exc()}"
+                st.session_state["last_run_success"] = False
+                st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
+                st.error(f"❌ Run failed: {ex}")
             finally:
                 st.rerun()
 
@@ -141,9 +195,11 @@ def compute_pending_counts(run_limit: int | None = None, show_id_override: str =
         drafts_per_episode = 3  # OpenAI key is required, so drafts will be generated
         drafts_count = episodes_count * drafts_per_episode
         return (episodes_count, drafts_count)
-    except Exception:
+    except Exception as e:
+        st.error(f"Error computing pending counts: {e}")
         return (0, 0)
 
+# Sidebar
 with st.sidebar:
     st.header("🎛️ Controls")
 
@@ -161,16 +217,17 @@ with st.sidebar:
     diag_feed_url = None
     diag_latest = None
     try:
-        cfg_d = load_config() if load_config else None
-        eff_id = (show_id_input or "").strip() or (extract_show_id_from_apple_url((url_input or "").strip()) or "")
-        if eff_id:
-            diag_feed_url = lookup_feed_url_via_itunes(eff_id)
-        if cfg_d is not None:
-            s = StateStore(cfg_d.data_dir / "state.json")
-            dt = s.get_latest_published()
-            diag_latest = dt.isoformat() if dt else "None"
-    except Exception:
-        pass
+        if load_config:
+            cfg_d = load_config()
+            eff_id = (show_id_input or "").strip() or (extract_show_id_from_apple_url((url_input or "").strip()) if extract_show_id_from_apple_url else "")
+            if eff_id and lookup_feed_url_via_itunes:
+                diag_feed_url = lookup_feed_url_via_itunes(eff_id)
+            if cfg_d and StateStore:
+                s = StateStore(cfg_d.data_dir / "state.json")
+                dt = s.get_latest_published()
+                diag_latest = dt.isoformat() if dt else "None"
+    except Exception as e:
+        st.caption(f"Diagnostic error: {e}")
 
     if diag_feed_url:
         st.caption(f"Resolved feed: {diag_feed_url}")
@@ -188,15 +245,18 @@ with st.sidebar:
 
     disabled = not bool(openai_key_input)
     if st.button("🚀 Run Pull Now", disabled=disabled):
-        eps, drafts = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
-        confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
+        if not openai_key_input:
+            st.error("Please enter an OpenAI API key")
+        else:
+            eps, drafts = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
+            confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
 
+# Main content
 cols = st.columns(2)
 
 # Left: transcripts list
 with cols[0]:
     st.subheader("📝 Transcripts")
-    TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
     transcript_files = sorted(TRANSCRIPTS_DIR.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not transcript_files:
         st.info("No transcripts yet.")
@@ -211,7 +271,6 @@ with cols[0]:
 # Right: posts list
 with cols[1]:
     st.subheader("📱 LinkedIn Drafts")
-    POSTS_DIR.mkdir(parents=True, exist_ok=True)
     post_files = sorted(POSTS_DIR.glob("*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not post_files:
         st.info("No drafts yet.")
@@ -226,7 +285,7 @@ with cols[1]:
 # Run logs (persisted)
 st.divider()
 st.subheader("📊 Last Run Output")
-if "last_run_output" in st.session_state:
+if st.session_state.get("last_run_output"):
     status_icon = "✅" if st.session_state.get("last_run_success") else "❌"
     ts = st.session_state.get("last_run_time") or ""
     st.caption(f"{status_icon} {ts}")
@@ -261,3 +320,14 @@ st.markdown("""
 
 This app can be deployed on [Streamlit Community Cloud](https://streamlit.io/cloud) or run locally.
 """)
+
+# Debug information
+with st.expander("🔍 Debug Information"):
+    st.write("**Project Root:**", PROJECT_ROOT)
+    st.write("**Data Directory:**", DATA_DIR)
+    st.write("**Transcripts Directory:**", TRANSCRIPTS_DIR)
+    st.write("**Posts Directory:**", POSTS_DIR)
+    st.write("**Python Path:**", sys.path[:3])  # Show first 3 paths
+    st.write("**Environment Variables:**")
+    env_vars = {k: v for k, v in os.environ.items() if k.startswith(('OPENAI', 'ASSEMBLYAI', 'SHOW_ID', 'APPLE'))}
+    st.json(env_vars)
