@@ -820,7 +820,7 @@ with cols[0]:
                 <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.code(transcript_content[:5000], language="text", height=200)
+            st.code(transcript_content[:5000], language="text")
 
 # Right: posts list
 with cols[1]:
