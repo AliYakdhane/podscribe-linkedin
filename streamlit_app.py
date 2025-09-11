@@ -94,24 +94,48 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                 if url_override:
                     env["APPLE_EPISODE_URL"] = url_override
                 
-                with st.spinner("Running podcast pull..."):
-                    result = subprocess.run(
-                        [sys.executable, "-m", "src.main"], 
-                        cwd=str(PROJECT_ROOT), 
-                        env={**os.environ, **env}, 
-                        capture_output=True, 
-                        text=True, 
-                        timeout=60*30
-                    )
+                # Create containers for real-time updates
+                status_container = st.container()
+                log_container = st.container()
                 
-                st.session_state["last_run_output"] = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
-                st.session_state["last_run_success"] = (result.returncode == 0)
-                st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
+                with status_container:
+                    st.info("🚀 Starting podcast pull process...")
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    elapsed_text = st.empty()
                 
-                if result.returncode == 0:
-                    st.success("✅ Run completed successfully!")
-                else:
-                    st.error("❌ Run failed!")
+                # Start the process
+                process = subprocess.Popen(
+                    [sys.executable, "-m", "src.main"], 
+                    cwd=str(PROJECT_ROOT), 
+                    env={**os.environ, **env}, 
+                    stdout=subprocess.PIPE, 
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1,
+                    universal_newlines=True
+                )
+                
+                # Initialize session state for logs if not exists
+                if "current_logs" not in st.session_state:
+                    st.session_state["current_logs"] = []
+                if "process_start_time" not in st.session_state:
+                    st.session_state["process_start_time"] = datetime.now()
+                
+                # Clear previous logs
+                st.session_state["current_logs"] = []
+                st.session_state["process_start_time"] = datetime.now()
+                
+                # Store process in session state for monitoring
+                st.session_state["running_process"] = process
+                st.session_state["process_env"] = env
+                
+                # Show initial status
+                status_text.text("Process started...")
+                elapsed_text.text("Elapsed: 0s")
+                
+                # Redirect to monitoring page
+                st.rerun()
                     
             except subprocess.TimeoutExpired:
                 st.session_state["last_run_output"] = "Run timed out after 30 minutes"
@@ -250,6 +274,68 @@ with st.sidebar:
         else:
             eps, drafts = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
             confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
+
+# Process monitoring section
+if "running_process" in st.session_state and st.session_state["running_process"]:
+    st.divider()
+    st.subheader("🔄 Process Monitoring")
+    
+    process = st.session_state["running_process"]
+    start_time = st.session_state.get("process_start_time", datetime.now())
+    current_time = datetime.now()
+    elapsed = (current_time - start_time).total_seconds()
+    
+    # Check if process is still running
+    if process.poll() is None:
+        # Process is still running
+        st.info(f"🚀 Process is running... ({elapsed:.0f}s elapsed)")
+        progress_bar = st.progress(min(elapsed / 300, 1.0))  # 5 min max progress
+        
+        # Try to read output (simplified approach)
+        try:
+            # Read available output
+            if process.stdout.readable():
+                line = process.stdout.readline()
+                if line:
+                    if "current_logs" not in st.session_state:
+                        st.session_state["current_logs"] = []
+                    st.session_state["current_logs"].append(line.strip())
+        except:
+            pass
+        
+        # Show recent logs
+        if "current_logs" in st.session_state and st.session_state["current_logs"]:
+            st.subheader("📊 Real-time Logs")
+            recent_logs = st.session_state["current_logs"][-10:]  # Show last 10 lines
+            for log_line in recent_logs:
+                st.text(log_line)
+        
+        # Auto-refresh every 2 seconds
+        import time
+        time.sleep(2)
+        st.rerun()
+    else:
+        # Process completed
+        return_code = process.returncode
+        final_output = "\n".join(st.session_state.get("current_logs", []))
+        
+        st.session_state["last_run_output"] = final_output
+        st.session_state["last_run_success"] = (return_code == 0)
+        st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
+        
+        # Clean up
+        del st.session_state["running_process"]
+        if "current_logs" in st.session_state:
+            del st.session_state["current_logs"]
+        if "process_start_time" in st.session_state:
+            del st.session_state["process_start_time"]
+        
+        if return_code == 0:
+            st.success("✅ Process completed successfully!")
+        else:
+            st.error(f"❌ Process failed with return code: {return_code}")
+        
+        st.rerun()
 
 # Main content
 cols = st.columns(2)
