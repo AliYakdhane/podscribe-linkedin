@@ -26,21 +26,47 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
         
         # Find episodes newer than the starting date
         newer_episodes = [e for e in episodes_sorted if e.published and e.published > starting_dt]
+        print(f"📊 Found {len(newer_episodes)} episodes newer than the specified episode URL")
         
         if not newer_episodes:
             print("ℹ️ No episodes found newer than the specified episode URL.")
             return []
         
+        # Debug: Show which episodes are newer
+        print("📋 Episodes newer than specified URL:")
+        for i, e in enumerate(newer_episodes[:10]):  # Show first 10
+            processed_status = "✅ Processed" if state.is_processed(e.guid) else "❌ Unprocessed"
+            print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'}) - {processed_status}")
+        
         # Filter out already processed episodes
         unprocessed_newer = [e for e in newer_episodes if not state.is_processed(e.guid)]
+        print(f"📊 Found {len(unprocessed_newer)} unprocessed episodes newer than the specified episode URL")
         
         if not unprocessed_newer:
             print("ℹ️ All episodes newer than the specified episode URL have already been processed.")
-            return []
+            print("🔄 Falling back to newest unprocessed episodes...")
+            
+            # Fallback: look for any unprocessed episodes (not just newer than the URL)
+            for e in episodes_sorted:
+                if not state.is_processed(e.guid):
+                    episodes_to_process.append(e)
+                    if len(episodes_to_process) >= max_episodes:
+                        break
+            
+            if episodes_to_process:
+                print(f"📋 Found {len(episodes_to_process)} unprocessed episodes (fallback mode):")
+                for i, e in enumerate(episodes_to_process):
+                    print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'})")
+            else:
+                print("ℹ️ No unprocessed episodes found anywhere.")
+            
+            return episodes_to_process
         
         # Take up to max_episodes
         episodes_to_process = unprocessed_newer[:max_episodes]
-        print(f"📋 Found {len(episodes_to_process)} unprocessed episodes newer than the specified episode URL.")
+        print(f"📋 Selected {len(episodes_to_process)} episodes to process:")
+        for i, e in enumerate(episodes_to_process):
+            print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'})")
         
     else:
         # No starting date - use the old logic (newest episodes)
