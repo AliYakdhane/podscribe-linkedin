@@ -81,7 +81,9 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
         if not episodes_to_process:
             print("ℹ️ No new episodes to process.")
         else:
-            print(f"📋 Found {len(episodes_to_process)} unprocessed episodes.")
+            print(f"📋 Found {len(episodes_to_process)} unprocessed episodes:")
+            for i, e in enumerate(episodes_to_process):
+                print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'})")
     
     return episodes_to_process
 
@@ -106,8 +108,10 @@ def run() -> None:
                 starting_dt = release_dt
             else:
                 print(f"❌ Could not lookup episode info from Apple for ID: {ep_id}")
+                print(f"🔄 Will use fallback logic to find unprocessed episodes")
         else:
             print(f"❌ Could not extract episode ID from URL: {cfg.apple_episode_url}")
+            print(f"🔄 Will use fallback logic to find unprocessed episodes")
 
     if not starting_show_id:
         raise RuntimeError("SHOW_ID not found. Set SHOW_ID or provide APPLE_EPISODE_URL with an id.")

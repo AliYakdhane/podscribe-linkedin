@@ -44,24 +44,34 @@ def lookup_feed_url_via_itunes(show_id: str) -> Optional[str]:
 
 
 def lookup_episode_release_and_show_id(episode_id: str) -> Optional[Tuple[str, datetime]]:
-    resp = requests.get("https://itunes.apple.com/lookup", params={"id": episode_id, "entity": "podcastEpisode"}, timeout=20)
-    resp.raise_for_status()
-    data = resp.json()
-    results = data.get("results", [])
-    if not results:
-        return None
-    # The first result should be the episode metadata
-    ep = results[0]
-    # collectionId is the show id; releaseDate is ISO string
-    show_id = str(ep.get("collectionId") or "")
-    release_str = ep.get("releaseDate")
-    if not show_id or not release_str:
-        return None
     try:
-        release_dt = dtparser.isoparse(release_str).replace(tzinfo=None)
-    except Exception:
+        resp = requests.get("https://itunes.apple.com/lookup", params={"id": episode_id, "entity": "podcastEpisode"}, timeout=20)
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results", [])
+        if not results:
+            print(f"⚠️ Apple API returned no results for episode ID: {episode_id}")
+            return None
+        # The first result should be the episode metadata
+        ep = results[0]
+        # collectionId is the show id; releaseDate is ISO string
+        show_id = str(ep.get("collectionId") or "")
+        release_str = ep.get("releaseDate")
+        if not show_id or not release_str:
+            print(f"⚠️ Apple API result missing show_id or releaseDate for episode ID: {episode_id}")
+            return None
+        try:
+            release_dt = dtparser.isoparse(release_str).replace(tzinfo=None)
+        except Exception as e:
+            print(f"⚠️ Could not parse release date '{release_str}' for episode ID: {episode_id}, error: {e}")
+            return None
+        return show_id, release_dt
+    except requests.exceptions.RequestException as e:
+        print(f"⚠️ Network error looking up episode ID {episode_id}: {e}")
         return None
-    return show_id, release_dt
+    except Exception as e:
+        print(f"⚠️ Unexpected error looking up episode ID {episode_id}: {e}")
+        return None
 
 
 def parse_feed_entries(feed_url: str) -> List[Episode]:
