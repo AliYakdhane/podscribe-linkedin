@@ -62,68 +62,126 @@ def build_supabase_client(url: Optional[str], key: Optional[str]):
 
     We import lazily to avoid hard dependency when not configured.
     """
+    print(f"  🔧 Supabase: Initializing client...")
+    print(f"  🔧 Supabase: URL provided: {'Yes' if url else 'No'}")
+    print(f"  🔧 Supabase: Key provided: {'Yes' if key else 'No'}")
+    
     if not url or not key:
-        print("  Supabase: missing SUPABASE_URL or key; skipping uploads")
+        print("  ❌ Supabase: missing SUPABASE_URL or key; skipping uploads")
         return None
+    
+    print(f"  🔧 Supabase: URL: {url}")
+    print(f"  🔧 Supabase: Key: {key[:10]}... (length: {len(key)})")
+    
     try:
+        print("  🔧 Supabase: Importing supabase client...")
         from supabase import create_client
+        print("  ✅ Supabase: Client imported successfully")
     except Exception as ex:
-        print(f"  Supabase: failed to import client: {ex}")
+        print(f"  ❌ Supabase: failed to import client: {ex}")
         return None
+    
     try:
+        print("  🔧 Supabase: Creating client instance...")
         client = create_client(url, key)
-        print("  Supabase: client initialized")
+        print("  ✅ Supabase: Client initialized successfully")
         return client
     except Exception as ex:
-        print(f"  Supabase: failed to initialize client: {ex}")
+        print(f"  ❌ Supabase: failed to initialize client: {ex}")
+        print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
+        import traceback
+        print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
         return None
 
 
 def ensure_tables_exist(client) -> None:
     """Ensure required tables exist (no-op if they exist)."""
+    print("  🔍 Supabase: Checking if tables exist...")
     try:
-        # Test if tables exist by trying to query them
+        print("  🔍 Supabase: Testing podcast_transcripts table...")
         client.table("podcast_transcripts").select("id").limit(1).execute()
+        print("  ✅ Supabase: podcast_transcripts table is accessible")
+        
+        print("  🔍 Supabase: Testing podcast_posts table...")
         client.table("podcast_posts").select("id").limit(1).execute()
-        print("  Supabase: tables exist and are accessible")
+        print("  ✅ Supabase: podcast_posts table is accessible")
+        
+        print("  ✅ Supabase: All tables exist and are accessible")
     except Exception as ex:
-        print(f"  Supabase: tables may not exist or are not accessible: {ex}")
-        print("  Please run the SQL schema in supabase_schema.sql to create the required tables")
+        print(f"  ❌ Supabase: tables may not exist or are not accessible: {ex}")
+        print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
+        print("  💡 Supabase: Please run the SQL schema to create the required tables")
+        import traceback
+        print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
 
 
 def store_transcript(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
     """Store transcript content directly in Supabase table. Returns True on success."""
     try:
+        print(f"  📤 Supabase: Preparing to store transcript for '{title}'")
+        print(f"  📤 Supabase: GUID: {guid}")
+        print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
+        print(f"  📤 Supabase: Content length: {len(content)} characters")
+        
         row = {
             "guid": guid,
             "title": title,
             "published_at": published_at.isoformat() if published_at else None,
             "transcript_content": content,
         }
+        
+        print(f"  📤 Supabase: Sending upsert request to table '{table}'")
         resp = client.table(table).upsert(row, on_conflict="guid").execute()
+        
+        print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
+        print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
+        
         if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
-            print(f"  Supabase: stored transcript for '{title}'")
+            print(f"  ✅ Supabase: Successfully stored transcript for '{title}'")
             return True
+        else:
+            print(f"  ❌ Supabase: Failed to store transcript - invalid response")
+            return False
     except Exception as ex:
-        print(f"  Supabase transcript storage failed: {ex}")
+        print(f"  ❌ Supabase transcript storage failed: {ex}")
+        print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
+        import traceback
+        print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
     return False
 
 
 def store_posts(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
     """Store posts content directly in Supabase table. Returns True on success."""
     try:
+        print(f"  📤 Supabase: Preparing to store posts for '{title}'")
+        print(f"  📤 Supabase: GUID: {guid}")
+        print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
+        print(f"  📤 Supabase: Content length: {len(content)} characters")
+        
         row = {
             "guid": guid,
             "title": title,
             "published_at": published_at.isoformat() if published_at else None,
             "posts_content": content,
         }
+        
+        print(f"  📤 Supabase: Sending upsert request to table '{table}'")
         resp = client.table(table).upsert(row, on_conflict="guid").execute()
+        
+        print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
+        print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
+        
         if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
-            print(f"  Supabase: stored posts for '{title}'")
+            print(f"  ✅ Supabase: Successfully stored posts for '{title}'")
             return True
+        else:
+            print(f"  ❌ Supabase: Failed to store posts - invalid response")
+            return False
     except Exception as ex:
-        print(f"  Supabase posts storage failed: {ex}")
+        print(f"  ❌ Supabase posts storage failed: {ex}")
+        print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
+        import traceback
+        print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
     return False
 
 

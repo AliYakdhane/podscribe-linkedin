@@ -50,16 +50,21 @@ def run() -> None:
 
     # Initialize Supabase if configured
     supabase_client = None
+    print(f"🔧 Supabase: Checking configuration...")
+    print(f"🔧 Supabase: URL configured: {'Yes' if cfg.supabase_url else 'No'}")
+    print(f"🔧 Supabase: Key configured: {'Yes' if cfg.supabase_key else 'No'}")
+    print(f"🔧 Supabase: Enabled: {cfg.supabase_enabled}")
+    
     if getattr(cfg, "supabase_enabled", False):
         key_src = "SERVICE_ROLE" if (os.getenv("SUPABASE_SERVICE_ROLE") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")) else ("ANON" if os.getenv("SUPABASE_ANON_KEY") else "UNKNOWN")
-        print(f"Supabase: enabled in config (key={key_src})")
+        print(f"✅ Supabase: enabled in config (key={key_src})")
         supabase_client = build_supabase_client(cfg.supabase_url, cfg.supabase_key)
         if supabase_client is not None:
             ensure_tables_exist(supabase_client)
         else:
-            print("  Supabase: client not initialized; uploads will be skipped")
+            print("  ❌ Supabase: client not initialized; uploads will be skipped")
     else:
-        print("Supabase: not configured; set SUPABASE_URL and key in .env to enable uploads")
+        print("❌ Supabase: not configured; set SUPABASE_URL and key in .env to enable uploads")
 
     # If starting_dt is set and newer than stored baseline, update baseline to that date
     if starting_dt is not None:
@@ -99,7 +104,8 @@ def run() -> None:
 
         # Store transcript in Supabase table
         if supabase_client is not None:
-            store_transcript(
+            print(f"  📤 Supabase: Attempting to store transcript for '{e.title}'")
+            success = store_transcript(
                 supabase_client,
                 cfg.supabase_table_transcripts,
                 e.guid,
@@ -107,6 +113,12 @@ def run() -> None:
                 e.published,
                 transcript_text
             )
+            if success:
+                print(f"  ✅ Supabase: Transcript storage completed successfully")
+            else:
+                print(f"  ❌ Supabase: Transcript storage failed")
+        else:
+            print(f"  ⏭️ Supabase: Skipping transcript storage (client not available)")
 
         # Generate posts if OpenAI configured
         if cfg.openai_api_key:
@@ -118,7 +130,8 @@ def run() -> None:
                     posts_path.write_text(posts_content, encoding="utf-8")
                     print(f"  LinkedIn drafts saved: {posts_path}")
                     if supabase_client is not None:
-                        store_posts(
+                        print(f"  📤 Supabase: Attempting to store posts for '{e.title}'")
+                        success = store_posts(
                             supabase_client,
                             cfg.supabase_table_posts,
                             e.guid,
@@ -126,6 +139,12 @@ def run() -> None:
                             e.published,
                             posts_content
                         )
+                        if success:
+                            print(f"  ✅ Supabase: Posts storage completed successfully")
+                        else:
+                            print(f"  ❌ Supabase: Posts storage failed")
+                    else:
+                        print(f"  ⏭️ Supabase: Skipping posts storage (client not available)")
             except Exception as ex:
                 print(f"  Failed to generate posts: {ex}")
         else:
