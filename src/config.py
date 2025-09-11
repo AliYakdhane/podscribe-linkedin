@@ -64,14 +64,6 @@ def load_config() -> Config:
     # Prefer service role for server-side scripts, else fall back to anon
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
     
-    # Debug logging for environment variables
-    print(f"🔍 Config Debug:")
-    print(f"  SUPABASE_URL: {'SET' if supabase_url else 'NOT SET'}")
-    print(f"  SUPABASE_SERVICE_ROLE: {'SET' if os.getenv('SUPABASE_SERVICE_ROLE') else 'NOT SET'}")
-    print(f"  SUPABASE_SERVICE_ROLE_KEY: {'SET' if os.getenv('SUPABASE_SERVICE_ROLE_KEY') else 'NOT SET'}")
-    print(f"  SUPABASE_ANON_KEY: {'SET' if os.getenv('SUPABASE_ANON_KEY') else 'NOT SET'}")
-    print(f"  Final supabase_key: {'SET' if supabase_key else 'NOT SET'}")
-    
     supabase_enabled = bool((supabase_url or "").strip() and (supabase_key or "").strip())
     supabase_table_transcripts = os.getenv("SUPABASE_TABLE_TRANSCRIPTS", "podcast_transcripts")
     supabase_table_posts = os.getenv("SUPABASE_TABLE_POSTS", "podcast_posts")
