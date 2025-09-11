@@ -456,16 +456,15 @@ with st.sidebar:
     # Supabase Configuration (optional) - hidden from UI
     supabase_configured = bool(st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"))
 
-    # Inputs for Apple episode URL and Show ID (either works; URL can derive ID)
-    url_input = st.text_input("Apple episode URL (optional)", value="", help="Paste any Apple Podcasts episode URL; we'll derive the show id.")
-    show_id_input = st.text_input("Show ID (optional)", value="", help="Overrides derived ID if provided.")
+    # Show ID input (Apple episode URL is stored in Supabase configuration)
+    show_id_input = st.text_input("Show ID (optional)", value="", help="Overrides the Show ID stored in Supabase if provided.")
 
     # Diagnostics
     diag_feed_url = None
     try:
         if load_config:
             cfg_d = load_config()
-            eff_id = (show_id_input or "").strip() or (extract_show_id_from_apple_url((url_input or "").strip()) if extract_show_id_from_apple_url else "")
+            eff_id = (show_id_input or "").strip()
             if eff_id and lookup_feed_url_via_itunes:
                 diag_feed_url = lookup_feed_url_via_itunes(eff_id)
     except Exception as e:
@@ -474,13 +473,13 @@ with st.sidebar:
     if diag_feed_url:
         st.caption(f"Resolved feed: {diag_feed_url}")
 
-    # Episode limit control
-    run_limit = st.number_input("Episodes to pull now", min_value=1, value=1, step=1)
+    # Episode limit control - removed, now stored in Supabase
+    run_limit = 1  # Default value for manual runs
     
     # Show intelligent episode selection status
-    if openai_key_input and (show_id_input or url_input):
+    if openai_key_input and show_id_input:
         try:
-            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
+            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, "", openai_key_input)
             if eps > 0:
                 st.success(f"✅ {status_msg}")
             else:
@@ -488,29 +487,29 @@ with st.sidebar:
         except Exception as e:
             st.warning(f"⚠️ Could not check episode status: {e}")
     else:
-        st.caption(f"This run will pull {run_limit} episode(s).")
+        st.caption("Configuration stored in Supabase. Manual runs will pull 1 episode.")
 
     # Save Configuration Button
     if st.button("💾 Save Configuration", help="Save your settings to Supabase for the cron job to use"):
-        if openai_key_input and (show_id_input or url_input):
+        if openai_key_input and show_id_input:
             success = save_configuration_to_supabase(
                 show_id=show_id_input,
-                apple_url=url_input,
-                max_episodes=run_limit,
+                apple_url="",  # Apple URL is managed separately in Supabase
+                max_episodes=1,  # Default episodes per run
                 openai_key=openai_key_input
             )
             if success:
                 st.rerun()
         else:
-            st.error("Please enter OpenAI API key and at least Show ID or Apple URL")
+            st.error("Please enter OpenAI API key and Show ID")
 
     disabled = not bool(openai_key_input)
     if st.button("🚀 Run Pull Now", disabled=disabled):
         if not openai_key_input:
             st.error("Please enter an OpenAI API key")
         else:
-            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
-            confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
+            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, "", openai_key_input)
+            confirm_pull_dialog(eps, drafts, run_limit, show_id_input, "", openai_key_input)
     
     # Clear Data Button
     st.divider()
@@ -575,67 +574,7 @@ print('Supabase data cleared successfully')
             except Exception as e:
                 st.error(f"❌ Error clearing Supabase data: {e}")
 
-# Process monitoring section
-if "running_process" in st.session_state and st.session_state["running_process"]:
-    st.divider()
-    st.subheader("🔄 Process Monitoring")
-    
-    process = st.session_state["running_process"]
-    start_time = st.session_state.get("process_start_time", datetime.now())
-    current_time = datetime.now()
-    elapsed = (current_time - start_time).total_seconds()
-    
-    # Check if process is still running
-    if process.poll() is None:
-        # Process is still running
-        st.info(f"🚀 Process is running... ({elapsed:.0f}s elapsed)")
-        progress_bar = st.progress(min(elapsed / 300, 1.0))  # 5 min max progress
-        
-        # Try to read output (simplified approach)
-        try:
-            # Read available output
-            if process.stdout.readable():
-                line = process.stdout.readline()
-                if line:
-                    if "current_logs" not in st.session_state:
-                        st.session_state["current_logs"] = []
-                    st.session_state["current_logs"].append(line.strip())
-        except:
-            pass
-        
-        # Show recent logs
-        if "current_logs" in st.session_state and st.session_state["current_logs"]:
-            st.subheader("📊 Real-time Logs")
-            recent_logs = st.session_state["current_logs"][-10:]  # Show last 10 lines
-            for log_line in recent_logs:
-                st.text(log_line)
-        
-        # Auto-refresh every 2 seconds
-        import time
-        time.sleep(2)
-        st.rerun()
-    else:
-        # Process completed
-        return_code = process.returncode
-        final_output = "\n".join(st.session_state.get("current_logs", []))
-        
-        st.session_state["last_run_output"] = final_output
-        st.session_state["last_run_success"] = (return_code == 0)
-        st.session_state["last_run_time"] = datetime.now().isoformat(timespec="seconds")
-        
-        # Clean up
-        del st.session_state["running_process"]
-        if "current_logs" in st.session_state:
-            del st.session_state["current_logs"]
-        if "process_start_time" in st.session_state:
-            del st.session_state["process_start_time"]
-        
-        if return_code == 0:
-            st.success("✅ Process completed successfully!")
-        else:
-            st.error(f"❌ Process failed with return code: {return_code}")
-        
-        st.rerun()
+# Process monitoring section removed for cleaner UI
 
 # Supabase Status
 supabase_url = st.secrets.get("SUPABASE_URL")
@@ -766,16 +705,7 @@ with cols[1]:
             else:
                 st.markdown("No content available")
 
-# Run logs (persisted)
-st.divider()
-st.subheader("📊 Last Run Output")
-if st.session_state.get("last_run_output"):
-    status_icon = "✅" if st.session_state.get("last_run_success") else "❌"
-    ts = st.session_state.get("last_run_time") or ""
-    st.caption(f"{status_icon} {ts}")
-    st.code(st.session_state.get("last_run_output", ""))
-else:
-    st.caption("No runs yet.")
+# Run logs section removed for cleaner UI
 
 # Footer
 st.divider()
@@ -786,8 +716,7 @@ st.markdown("""
    - [OpenAI API Key](https://platform.openai.com/api-keys) (required for transcription and post generation)
 
 2. **Configure Podcast**:
-   - Enter an Apple Podcasts episode URL, or
-   - Enter a Show ID directly
+   - Enter a Show ID (Apple episode URLs are managed in Supabase configuration)
 
 3. **Run**: Click "Run Pull Now" to fetch new episodes and generate LinkedIn drafts
 
