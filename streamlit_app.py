@@ -142,13 +142,53 @@ try:
         lookup_episode_release_and_show_id,
     )
     from src.storage import StateStore
+from src.config_manager import save_user_config
     st.success("✅ All modules imported successfully!")
 except Exception as e:
     st.error(f"❌ Import error: {str(e)}")
     st.code(traceback.format_exc())
     st.warning("Some features may not work. Check the error above.")
 
-# Dialog to confirm pull
+def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: int, openai_key: str):
+    """Save user configuration to Supabase"""
+    try:
+        from src.storage import build_supabase_client
+        
+        # Check if Supabase is configured
+        if not (st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY")):
+            st.warning("⚠️ Supabase not configured - configuration not saved")
+            return False
+        
+        # Build Supabase client
+        supabase_client = build_supabase_client(
+            st.secrets["SUPABASE_URL"],
+            st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
+        )
+        
+        if not supabase_client:
+            st.error("❌ Failed to connect to Supabase")
+            return False
+        
+        # Save configuration
+        success = save_user_config(
+            supabase_client,
+            show_id=show_id,
+            apple_episode_url=apple_url,
+            max_episodes_per_run=max_episodes,
+            openai_api_key=openai_key
+        )
+        
+        if success:
+            st.success("✅ Configuration saved to Supabase")
+            return True
+        else:
+            st.error("❌ Failed to save configuration")
+            return False
+            
+    except Exception as e:
+        st.error(f"❌ Error saving configuration: {str(e)}")
+        return False
+
 @st.dialog("Confirm Pull")
 def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, show_id_override: str, url_override: str, openai_key: str):
     st.write(f"Episodes to pull now: {episodes_count}")
@@ -346,6 +386,20 @@ with st.sidebar:
             st.warning(f"⚠️ Could not check episode status: {e}")
     else:
         st.caption(f"This run will pull {run_limit} episode(s).")
+
+    # Save Configuration Button
+    if st.button("💾 Save Configuration", help="Save your settings to Supabase for the cron job to use"):
+        if openai_key_input and (show_id_input or url_input):
+            success = save_configuration_to_supabase(
+                show_id=show_id_input,
+                apple_url=url_input,
+                max_episodes=run_limit,
+                openai_key=openai_key_input
+            )
+            if success:
+                st.rerun()
+        else:
+            st.error("Please enter OpenAI API key and at least Show ID or Apple URL")
 
     disabled = not bool(openai_key_input)
     if st.button("🚀 Run Pull Now", disabled=disabled):

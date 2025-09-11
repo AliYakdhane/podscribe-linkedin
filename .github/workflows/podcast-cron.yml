@@ -36,7 +36,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          MAX_EPISODES_PER_RUN: "1"  # Pull only 1 episode for testing (change to "3" for production)
+          # Configuration is now loaded from Supabase user_config table
         run: |
           echo "🤖 Starting automated podcast pull..."
           echo "⏰ Current time: $(date)"

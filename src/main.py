@@ -10,6 +10,7 @@ from .apple import extract_show_id_from_apple_url, lookup_feed_url_via_itunes, p
 from .transcripts import get_transcript_text
 from .posts import generate_linkedin_posts
 from .storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts
+from .config_manager import get_user_config
 
 
 def _sanitize_filename(name: str) -> str:
@@ -91,12 +92,45 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
 def run() -> None:
     cfg = load_config()
 
+    # Initialize Supabase first to get user configuration
+    supabase_client = None
+    print(f"🔧 Supabase: Checking configuration...")
+    print(f"🔧 Supabase: URL configured: {'Yes' if cfg.supabase_url else 'No'}")
+    print(f"🔧 Supabase: Key configured: {'Yes' if cfg.supabase_key else 'No'}")
+    print(f"🔧 Supabase: Enabled: {cfg.supabase_enabled}")
+    
+    if getattr(cfg, "supabase_enabled", False):
+        key_src = "SERVICE_ROLE" if (os.getenv("SUPABASE_SERVICE_ROLE") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")) else ("ANON" if os.getenv("SUPABASE_ANON_KEY") else "UNKNOWN")
+        print(f"✅ Supabase: enabled in config (key={key_src})")
+        supabase_client = build_supabase_client(cfg.supabase_url, cfg.supabase_key)
+        if supabase_client is not None:
+            ensure_tables_exist(supabase_client)
+        else:
+            print("  ❌ Supabase: client not initialized; uploads will be skipped")
+    else:
+        print("❌ Supabase: not configured; set SUPABASE_URL and key in .env to enable uploads")
+
+    # Load user configuration from Supabase
+    user_config = {}
+    if supabase_client:
+        user_config = get_user_config(supabase_client)
+        if user_config:
+            print(f"📋 Using user configuration from Supabase")
+        else:
+            print(f"⚠️ No user configuration found in Supabase, using environment variables")
+
+    # Determine configuration values (Supabase config takes precedence)
+    starting_show_id = user_config.get('show_id') or cfg.show_id
+    apple_episode_url = user_config.get('apple_episode_url') or cfg.apple_episode_url
+    max_episodes = user_config.get('max_episodes_per_run') or cfg.max_episodes_per_run
+    
+    print(f"📋 Configuration: Show ID={starting_show_id}, Max Episodes={max_episodes}")
+
     # If APPLE_EPISODE_URL is provided, set starting baseline from that episode's release date
-    starting_show_id = cfg.show_id
     starting_dt = None
-    if cfg.apple_episode_url:
-        print(f"🔍 Parsing Apple episode URL: {cfg.apple_episode_url}")
-        ep_id = extract_episode_id_from_apple_url(cfg.apple_episode_url)
+    if apple_episode_url:
+        print(f"🔍 Parsing Apple episode URL: {apple_episode_url}")
+        ep_id = extract_episode_id_from_apple_url(apple_episode_url)
         print(f"📋 Extracted episode ID: {ep_id}")
         if ep_id:
             print(f"🔍 Looking up episode info from Apple...")
@@ -110,7 +144,7 @@ def run() -> None:
                 print(f"❌ Could not lookup episode info from Apple for ID: {ep_id}")
                 print(f"🔄 Will use fallback logic to find unprocessed episodes")
         else:
-            print(f"❌ Could not extract episode ID from URL: {cfg.apple_episode_url}")
+            print(f"❌ Could not extract episode ID from URL: {apple_episode_url}")
             print(f"🔄 Will use fallback logic to find unprocessed episodes")
 
     if not starting_show_id:
@@ -130,29 +164,13 @@ def run() -> None:
 
     state = StateStore(cfg.data_dir / "state.json")
 
-    # Initialize Supabase if configured
-    supabase_client = None
-    print(f"🔧 Supabase: Checking configuration...")
-    print(f"🔧 Supabase: URL configured: {'Yes' if cfg.supabase_url else 'No'}")
-    print(f"🔧 Supabase: Key configured: {'Yes' if cfg.supabase_key else 'No'}")
-    print(f"🔧 Supabase: Enabled: {cfg.supabase_enabled}")
-    
-    if getattr(cfg, "supabase_enabled", False):
-        key_src = "SERVICE_ROLE" if (os.getenv("SUPABASE_SERVICE_ROLE") or os.getenv("SUPABASE_SERVICE_ROLE_KEY")) else ("ANON" if os.getenv("SUPABASE_ANON_KEY") else "UNKNOWN")
-        print(f"✅ Supabase: enabled in config (key={key_src})")
-        supabase_client = build_supabase_client(cfg.supabase_url, cfg.supabase_key)
-        if supabase_client is not None:
-            ensure_tables_exist(supabase_client)
-        else:
-            print("  ❌ Supabase: client not initialized; uploads will be skipped")
-    else:
-        print("❌ Supabase: not configured; set SUPABASE_URL and key in .env to enable uploads")
+    # Supabase is already initialized above
 
     # Process newest first
     episodes_sorted = sort_episodes(episodes)
 
     # Use intelligent episode selection
-    episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, cfg.max_episodes_per_run)
+    episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, max_episodes)
 
     if not episodes_to_process:
         print("No new episodes to process.")
