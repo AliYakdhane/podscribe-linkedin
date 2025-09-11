@@ -74,7 +74,7 @@ def login_form():
 
 def logout_button():
     """Display logout button in sidebar"""
-    if st.sidebar.button("🚪 Logout", use_container_width=True):
+    if st.sidebar.button("🚪 Logout", use_container_width=True, key="logout_btn"):
         # Clear all session state
         for key in ["authenticated", "login_time", "username"]:
             if key in st.session_state:
