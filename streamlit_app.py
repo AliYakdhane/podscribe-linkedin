@@ -89,80 +89,211 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for professional styling
+# Professional CSS styling
 st.markdown("""
 <style>
+    /* Global Styles */
+    .main {
+        padding-top: 1rem;
+    }
+    
+    /* Header Styles */
     .main-header {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
-        padding: 2rem;
-        border-radius: 10px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem 2rem;
+        border-radius: 16px;
         margin-bottom: 2rem;
         color: white;
         text-align: center;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
     }
+    
+    /* Metric Cards */
     .metric-card {
         background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border-left: 4px solid #1f4e79;
-        margin-bottom: 1rem;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid #f0f2f6;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    /* Section Headers */
     .section-header {
-        color: #1f4e79;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e6f3ff;
+        color: #2d3748;
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #667eea;
+        position: relative;
     }
-    .status-success {
-        background: #e8f5e8;
-        color: #2d5d2d;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        border-left: 4px solid #4caf50;
-        margin: 0.5rem 0;
+    
+    .section-header::after {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
     }
-    .status-warning {
-        background: #fff3cd;
-        color: #856404;
-        padding: 0.5rem 1rem;
-        border-radius: 5px;
-        border-left: 4px solid #ffc107;
-        margin: 0.5rem 0;
-    }
+    
+    /* Content Cards */
     .content-card {
         background: white;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        margin-bottom: 1rem;
-    }
-    .sidebar .sidebar-content {
-        background: #f8f9fa;
-    }
-    .stButton > button {
-        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 600;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        border: 1px solid #f0f2f6;
+        margin-bottom: 1.5rem;
         transition: all 0.3s ease;
     }
+    
+    .content-card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+    
+    /* Sidebar Styling */
+    .sidebar .sidebar-content {
+        background: #f8fafc;
+        padding: 1rem;
+    }
+    
+    .sidebar-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    }
+    
+    /* Button Styles */
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(31, 78, 121, 0.3);
+        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
     }
+    
+    /* Input Styles */
     .stTextInput > div > div > input {
-        border-radius: 8px;
-        border: 2px solid #e1e5e9;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
     }
+    
     .stTextInput > div > div > input:focus {
-        border-color: #1f4e79;
-        box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.1);
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
     }
+    
+    /* Selectbox Styles */
+    .stSelectbox > div > div {
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    
+    .stSelectbox > div > div:focus-within {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Status Indicators */
+    .status-success {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+    }
+    
+    .status-warning {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+    }
+    
+    .status-error {
+        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+    }
+    
+    /* Content Display */
+    .content-display {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border-left: 4px solid #667eea;
+        margin: 1rem 0;
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        margin-top: 3rem;
+        padding: 2rem;
+        color: #718096;
+        font-size: 0.9rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .main-header {
+            padding: 2rem 1rem;
+        }
+        .metric-card {
+            padding: 1.5rem;
+        }
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -177,10 +308,21 @@ logout_button()
 # Professional Header
 st.markdown("""
 <div class="main-header">
-    <h1 style="margin: 0; font-size: 2.5rem;">🎙️ Podcast AI Studio</h1>
-    <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">
-        Automated podcast transcription and LinkedIn content generation
+    <h1 style="margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.02em;">🎙️ Podcast AI Studio</h1>
+    <p style="margin: 1rem 0 0 0; font-size: 1.3rem; opacity: 0.95; font-weight: 300;">
+        Transform podcasts into engaging LinkedIn content with AI-powered automation
     </p>
+    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+            🤖 AI Transcription
+        </span>
+        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+            📝 Content Generation
+        </span>
+        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+            ☁️ Cloud Sync
+        </span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -534,8 +676,9 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
 # Sidebar
 with st.sidebar:
     st.markdown("""
-    <div style="background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; color: white;">
-        <h2 style="margin: 0; text-align: center;">🎛️ Control Panel</h2>
+    <div class="sidebar-header">
+        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">🎛️ Control Panel</h2>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Configure and manage your podcast automation</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -683,15 +826,29 @@ with col1:
     if supabase_url and supabase_key:
         st.markdown("""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #4caf50;">☁️ Cloud Storage</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666;">Active & Synchronized</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">☁️</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Cloud Storage</h3>
+                    <p style="margin: 0; color: #48bb78; font-size: 0.85rem; font-weight: 500;">Active & Synchronized</p>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #ff9800;">⚠️ Local Only</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666;">Data will be lost on restart</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">⚠️</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Local Only</h3>
+                    <p style="margin: 0; color: #ed8936; font-size: 0.85rem; font-weight: 500;">Data will be lost on restart</p>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -700,15 +857,35 @@ with col2:
         transcripts = load_transcripts_from_supabase()
         st.markdown(f"""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #1f4e79;">📝 Transcripts</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">{len(transcripts)}</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">📝</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Transcripts</h3>
+                    <p style="margin: 0; color: #667eea; font-size: 0.85rem; font-weight: 500;">Available</p>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: #667eea;">{len(transcripts)}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     except:
         st.markdown("""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #1f4e79;">📝 Transcripts</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">0</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">📝</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">Transcripts</h3>
+                    <p style="margin: 0; color: #667eea; font-size: 0.85rem; font-weight: 500;">Available</p>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: #667eea;">0</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -717,15 +894,35 @@ with col3:
         posts = load_posts_from_supabase()
         st.markdown(f"""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #1f4e79;">📱 LinkedIn Posts</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">{len(posts)}</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">📱</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">LinkedIn Posts</h3>
+                    <p style="margin: 0; color: #9f7aea; font-size: 0.85rem; font-weight: 500;">Generated</p>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: #9f7aea;">{len(posts)}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     except:
         st.markdown("""
         <div class="metric-card">
-            <h3 style="margin: 0; color: #1f4e79;">📱 LinkedIn Posts</h3>
-            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">0</p>
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-right: 1rem;">
+                    <span style="color: white; font-size: 1.2rem;">📱</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748; font-size: 1.1rem; font-weight: 600;">LinkedIn Posts</h3>
+                    <p style="margin: 0; color: #9f7aea; font-size: 0.85rem; font-weight: 500;">Generated</p>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 2.5rem; font-weight: 800; color: #9f7aea;">0</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -779,9 +976,13 @@ with cols[0]:
             else:
                 date_str = 'Unknown date'
             
-            st.caption(f"Episode: {episode_title}")
-            st.caption(f"Saved: {date_str}")
-            st.code(transcript_content[:20000])
+            st.markdown(f"""
+            <div class="content-display">
+                <h4 style="margin: 0 0 0.5rem 0; color: #2d3748; font-weight: 600;">{episode_title}</h4>
+                <p style="margin: 0 0 1rem 0; color: #718096; font-size: 0.9rem;">Saved: {date_str}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.code(transcript_content[:20000], language="text")
 
 # Right: posts list
 with cols[1]:
@@ -828,15 +1029,23 @@ with cols[1]:
             else:
                 date_str = 'Unknown date'
             
-            st.caption(f"Episode: {episode_title}")
-            st.caption(f"Saved: {date_str}")
+            st.markdown(f"""
+            <div class="content-display">
+                <h4 style="margin: 0 0 0.5rem 0; color: #2d3748; font-weight: 600;">{episode_title}</h4>
+                <p style="margin: 0 0 1rem 0; color: #718096; font-size: 0.9rem;">Saved: {date_str}</p>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Split posts content and display each post separately
             if posts_content and posts_content != 'No content available':
                 posts_list = posts_content.split('---')
                 for i, post in enumerate(posts_list, 1):
                     if post.strip():
-                        st.subheader(f"Post {i}")
+                        st.markdown(f"""
+                        <div style="background: #f7fafc; padding: 1.5rem; border-radius: 12px; margin: 1rem 0; border-left: 4px solid #9f7aea;">
+                            <h4 style="margin: 0 0 1rem 0; color: #9f7aea; font-weight: 600;">Post {i}</h4>
+                        </div>
+                        """, unsafe_allow_html=True)
                         st.markdown(post.strip())
                         if i < len(posts_list):
                             st.divider()
@@ -845,9 +1054,9 @@ with cols[1]:
 
 # Run logs section removed for cleaner UI
 
-# Clean footer with just branding
+# Professional footer
 st.markdown("""
-<div style="text-align: center; margin-top: 2rem; padding: 1rem; color: #666; font-size: 0.9rem;">
+<div class="footer">
     🎙️ <strong>Podcast AI Studio</strong> - Powered by OpenAI & Supabase
 </div>
 """, unsafe_allow_html=True)
