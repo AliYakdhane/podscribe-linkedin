@@ -284,14 +284,8 @@ with st.sidebar:
     # Required OpenAI key for this run
     openai_key_input = st.text_input("OpenAI API Key", value="", type="password", help="Required to transcribe and generate posts.")
     
-    # Supabase Configuration (optional)
-    st.subheader("☁️ Supabase Storage (Optional)")
-    # Check if Supabase is configured via secrets
+    # Supabase Configuration (optional) - hidden from UI
     supabase_configured = bool(st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"))
-    if supabase_configured:
-        st.success("✅ Supabase configured via secrets")
-    else:
-        st.info("💡 Configure Supabase in Streamlit secrets for permanent storage")
 
     # Inputs for Apple episode URL and Show ID (either works; URL can derive ID)
     url_input = st.text_input("Apple episode URL (optional)", value="", help="Paste any Apple Podcasts episode URL; we'll derive the show id.")
