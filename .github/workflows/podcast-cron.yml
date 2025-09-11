@@ -40,6 +40,10 @@ jobs:
         run: |
           echo "🤖 Starting automated podcast pull..."
           echo "⏰ Current time: $(date)"
+          echo "🔍 Environment check:"
+          echo "  SUPABASE_URL: ${SUPABASE_URL:0:20}..."
+          echo "  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:0:20}..."
+          echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..."
           python -m src.main
           echo "✅ Podcast pull completed"
       
