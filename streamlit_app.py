@@ -110,16 +110,16 @@ st.markdown("""
     
     /* Metric Cards */
     .metric-card {
-        background: white;
-        padding: 0.75rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        border: 1px solid #e2e8f0;
-        margin-bottom: 0.5rem;
+        background: #374151;
+        padding: 0.5rem;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        border: 1px solid #4b5563;
+        margin-bottom: 0.25rem;
         transition: all 0.2s ease;
         position: relative;
         overflow: hidden;
-        height: 60px;
+        height: 40px;
         display: flex;
         align-items: center;
     }
@@ -130,14 +130,15 @@ st.markdown("""
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 2px;
         background: #4f46e5;
     }
     
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         border-color: #4f46e5;
+        background: #4b5563;
     }
     
     /* Section Headers */
@@ -688,10 +689,10 @@ with col1:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">☁️</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">Cloud Storage</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">☁️</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Cloud Storage</span>
                 </div>
-                <div style="width: 6px; height: 6px; background: #10b981; border-radius: 50%;"></div>
+                <div style="width: 4px; height: 4px; background: #10b981; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -700,10 +701,10 @@ with col1:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">⚠️</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">Local Only</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">⚠️</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Local Only</span>
                 </div>
-                <div style="width: 6px; height: 6px; background: #f59e0b; border-radius: 50%;"></div>
+                <div style="width: 4px; height: 4px; background: #f59e0b; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -715,10 +716,10 @@ with col2:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📝</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">Transcripts</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">📝</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Transcripts</span>
                 </div>
-                <span style="font-size: 1.1rem; font-weight: 600; color: #4f46e5;">{len(transcripts)}</span>
+                <span style="font-size: 0.9rem; font-weight: 600; color: #a5b4fc;">{len(transcripts)}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -727,10 +728,10 @@ with col2:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📝</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">Transcripts</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">📝</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Transcripts</span>
                 </div>
-                <span style="font-size: 1.1rem; font-weight: 600; color: #4f46e5;">0</span>
+                <span style="font-size: 0.9rem; font-weight: 600; color: #a5b4fc;">0</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -742,10 +743,10 @@ with col3:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📱</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">LinkedIn Posts</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">📱</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">LinkedIn Posts</span>
                 </div>
-                <span style="font-size: 1.1rem; font-weight: 600; color: #8b5cf6;">{len(posts)}</span>
+                <span style="font-size: 0.9rem; font-weight: 600; color: #c4b5fd;">{len(posts)}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -754,10 +755,10 @@ with col3:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
                 <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1.2rem; margin-right: 0.5rem;">📱</span>
-                    <span style="color: #2d3748; font-size: 0.9rem; font-weight: 500;">LinkedIn Posts</span>
+                    <span style="font-size: 1rem; margin-right: 0.4rem;">📱</span>
+                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">LinkedIn Posts</span>
                 </div>
-                <span style="font-size: 1.1rem; font-weight: 600; color: #8b5cf6;">0</span>
+                <span style="font-size: 0.9rem; font-weight: 600; color: #c4b5fd;">0</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
