@@ -845,47 +845,9 @@ with cols[1]:
 
 # Run logs section removed for cleaner UI
 
-# Footer
-st.divider()
+# Clean footer with just branding
 st.markdown("""
-<div style="background: #f8f9fa; padding: 2rem; border-radius: 10px; margin-top: 2rem; border-left: 4px solid #1f4e79;">
-    <h3 style="color: #1f4e79; margin-top: 0;">🚀 Quick Start Guide</h3>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-        <div>
-            <h4 style="color: #1f4e79;">Setup</h4>
-            <ol style="color: #666; line-height: 1.6;">
-                <li>Get your <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Key</a></li>
-                <li>Enter Show ID in the sidebar</li>
-                <li>Click "Save Configuration"</li>
-                <li>Click "Run Pull Now" to start</li>
-            </ol>
-        </div>
-        <div>
-            <h4 style="color: #1f4e79;">Features</h4>
-            <ul style="color: #666; line-height: 1.6;">
-                <li>✅ Automated episode detection</li>
-                <li>✅ AI-powered transcription</li>
-                <li>✅ LinkedIn post generation</li>
-                <li>✅ Cloud storage & sync</li>
-                <li>✅ Scheduled automation</li>
-            </ul>
-        </div>
-    </div>
-    <div style="text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
-        <p style="color: #666; margin: 0; font-size: 0.9rem;">
-            🎙️ <strong>Podcast AI Studio</strong> - Powered by OpenAI & Supabase
-        </p>
-    </div>
+<div style="text-align: center; margin-top: 2rem; padding: 1rem; color: #666; font-size: 0.9rem;">
+    🎙️ <strong>Podcast AI Studio</strong> - Powered by OpenAI & Supabase
 </div>
 """, unsafe_allow_html=True)
-
-# Debug information
-with st.expander("🔍 Debug Information"):
-    st.write("**Project Root:**", PROJECT_ROOT)
-    st.write("**Data Directory:**", DATA_DIR)
-    st.write("**Transcripts Directory:**", TRANSCRIPTS_DIR)
-    st.write("**Posts Directory:**", POSTS_DIR)
-    st.write("**Python Path:**", sys.path[:3])  # Show first 3 paths
-    st.write("**Environment Variables:**")
-    env_vars = {k: v for k, v in os.environ.items() if k.startswith(('OPENAI', 'ASSEMBLYAI', 'SHOW_ID', 'APPLE'))}
-    st.json(env_vars)
