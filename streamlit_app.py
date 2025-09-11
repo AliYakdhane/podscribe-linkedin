@@ -238,11 +238,11 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                 st.rerun()
 
 
-def compute_pending_counts(run_limit: int, show_id_override: str = "", url_override: str = "", openai_key: str = "") -> tuple[int, int]:
-    """Return (episodes_to_process, drafts_to_generate) for the specified number of episodes."""
+def compute_pending_counts(run_limit: int, show_id_override: str = "", url_override: str = "", openai_key: str = "") -> tuple[int, int, str]:
+    """Return (episodes_to_process, drafts_to_generate, status_message) for the specified number of episodes."""
     try:
         if load_config is None or not openai_key:
-            return (0, 0)
+            return (0, 0, "OpenAI key required")
         cfg = load_config()
 
         # Determine effective show id
@@ -257,25 +257,51 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
             eff_show_id = (cfg.show_id or "").strip()
 
         if not eff_show_id:
-            return (0, 0)
+            return (0, 0, "Show ID required")
 
         feed_url = lookup_feed_url_via_itunes(eff_show_id)
         if not feed_url:
-            return (0, 0)
+            return (0, 0, "Could not resolve feed URL")
 
         episodes = parse_feed_entries(feed_url)
         episodes = sort_episodes(episodes)
 
-        # Take the specified number of episodes (newest first)
-        pending = episodes[:run_limit]
+        # Check if we have an Apple episode URL
+        if eff_url:
+            try:
+                ep_id = extract_episode_id_from_apple_url(eff_url)
+                if ep_id:
+                    info = lookup_episode_release_and_show_id(ep_id)
+                    if info:
+                        _, release_dt = info
+                        # Find episodes newer than the specified episode
+                        newer_episodes = [e for e in episodes if e.published and e.published > release_dt]
+                        if not newer_episodes:
+                            return (0, 0, "No episodes newer than the specified episode URL")
+                        
+                        # Check if any are unprocessed (simplified check)
+                        pending = newer_episodes[:run_limit]
+                        status_msg = f"Found {len(pending)} episodes newer than the specified episode URL"
+                    else:
+                        pending = episodes[:run_limit]
+                        status_msg = f"Could not parse episode URL, using newest {len(pending)} episodes"
+                else:
+                    pending = episodes[:run_limit]
+                    status_msg = f"Could not extract episode ID, using newest {len(pending)} episodes"
+            except Exception:
+                pending = episodes[:run_limit]
+                status_msg = f"Error parsing episode URL, using newest {len(pending)} episodes"
+        else:
+            # No episode URL - use newest episodes
+            pending = episodes[:run_limit]
+            status_msg = f"Using newest {len(pending)} episodes"
 
         episodes_count = len(pending)
         drafts_per_episode = 3  # OpenAI key is required, so drafts will be generated
         drafts_count = episodes_count * drafts_per_episode
-        return (episodes_count, drafts_count)
+        return (episodes_count, drafts_count, status_msg)
     except Exception as e:
-        st.error(f"Error computing pending counts: {e}")
-        return (0, 0)
+        return (0, 0, f"Error: {e}")
 
 # Sidebar
 with st.sidebar:
@@ -307,14 +333,26 @@ with st.sidebar:
 
     # Episode limit control
     run_limit = st.number_input("Episodes to pull now", min_value=1, value=1, step=1)
-    st.caption(f"This run will pull {run_limit} episode(s).")
+    
+    # Show intelligent episode selection status
+    if openai_key_input and (show_id_input or url_input):
+        try:
+            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
+            if eps > 0:
+                st.success(f"✅ {status_msg}")
+            else:
+                st.info(f"ℹ️ {status_msg}")
+        except Exception as e:
+            st.warning(f"⚠️ Could not check episode status: {e}")
+    else:
+        st.caption(f"This run will pull {run_limit} episode(s).")
 
     disabled = not bool(openai_key_input)
     if st.button("🚀 Run Pull Now", disabled=disabled):
         if not openai_key_input:
             st.error("Please enter an OpenAI API key")
         else:
-            eps, drafts = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
+            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, url_input, openai_key_input)
             confirm_pull_dialog(eps, drafts, run_limit, show_id_input, url_input, openai_key_input)
     
     # Clear Data Button

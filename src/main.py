@@ -16,6 +16,50 @@ def _sanitize_filename(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9._-]+", "_", name).strip("._") or "episode"
 
 
+def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateStore, max_episodes: int) -> List:
+    """Find episodes to process based on intelligent selection logic."""
+    episodes_to_process = []
+    
+    if starting_dt is not None:
+        # If we have a starting date (from Apple episode URL), find episodes between that date and newest
+        print(f"🔍 Looking for episodes between {starting_dt.isoformat()} and newest...")
+        
+        # Find episodes newer than the starting date
+        newer_episodes = [e for e in episodes_sorted if e.published and e.published > starting_dt]
+        
+        if not newer_episodes:
+            print("ℹ️ No episodes found newer than the specified episode URL.")
+            return []
+        
+        # Filter out already processed episodes
+        unprocessed_newer = [e for e in newer_episodes if not state.is_processed(e.guid)]
+        
+        if not unprocessed_newer:
+            print("ℹ️ All episodes newer than the specified episode URL have already been processed.")
+            return []
+        
+        # Take up to max_episodes
+        episodes_to_process = unprocessed_newer[:max_episodes]
+        print(f"📋 Found {len(episodes_to_process)} unprocessed episodes newer than the specified episode URL.")
+        
+    else:
+        # No starting date - use the old logic (newest episodes)
+        print("🔍 Looking for newest unprocessed episodes...")
+        
+        for e in episodes_sorted:
+            if not state.is_processed(e.guid):
+                episodes_to_process.append(e)
+                if len(episodes_to_process) >= max_episodes:
+                    break
+        
+        if not episodes_to_process:
+            print("ℹ️ No new episodes to process.")
+        else:
+            print(f"📋 Found {len(episodes_to_process)} unprocessed episodes.")
+    
+    return episodes_to_process
+
+
 def run() -> None:
     cfg = load_config()
 
@@ -66,28 +110,18 @@ def run() -> None:
     else:
         print("❌ Supabase: not configured; set SUPABASE_URL and key in .env to enable uploads")
 
-    # If starting_dt is set and newer than stored baseline, update baseline to that date
-    if starting_dt is not None:
-        current = state.get_latest_published()
-        if current is None or starting_dt > current:
-            state.latest_published_iso = starting_dt.isoformat()
-            # do not save yet; will be saved on first processed or if no processing, save at end
-
     # Process newest first
     episodes_sorted = sort_episodes(episodes)
 
-    latest_dt = state.get_latest_published()
+    # Use intelligent episode selection
+    episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, cfg.max_episodes_per_run)
+
+    if not episodes_to_process:
+        print("No new episodes to process.")
+        return
 
     processed_count = 0
-    for e in episodes_sorted:
-        # Only process episodes newer than the latest baseline publish time
-        if latest_dt is not None:
-            # Treat missing publish date as older than baseline
-            if e.published is None or not (e.published > latest_dt):
-                continue
-        if state.is_processed(e.guid):
-            continue
-
+    for e in episodes_to_process:
         print(f"Processing: {e.title}")
 
         try:
@@ -153,19 +187,7 @@ def run() -> None:
         state.mark_processed(e.guid, e.published)
         processed_count += 1
 
-        if cfg.max_episodes_per_run > 0 and processed_count >= cfg.max_episodes_per_run:
-            break
-
-    # If we set a baseline but processed nothing, persist the baseline so future runs only consider newer
-    if processed_count == 0 and starting_dt is not None:
-        state._save()
-
-    # State is managed locally - no need to upload to Supabase
-
-    if processed_count == 0:
-        print("No new episodes to process.")
-    else:
-        print(f"Processed {processed_count} new episode(s).")
+    print(f"Processed {processed_count} new episode(s).")
 
 
 if __name__ == "__main__":
