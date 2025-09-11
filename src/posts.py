@@ -6,7 +6,7 @@ from openai import OpenAI
 
 
 def generate_linkedin_posts(openai_api_key: str, transcript_text: str, episode_title: str) -> List[str]:
-    client = OpenAI()
+    client = OpenAI(api_key=openai_api_key)
 
     system_msg = (
         "You are a social media editor who turns transcripts into concise, high-signal LinkedIn posts. "

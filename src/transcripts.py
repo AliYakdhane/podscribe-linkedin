@@ -56,7 +56,7 @@ def _fetch_text_from_url(url: str) -> str:
         return ""
 
 
-def transcribe_via_openai_whisper(audio_url: str) -> str:
+def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None) -> str:
     # Whisper has a ~25MB file size limit. Check upfront when possible.
     try:
         head = requests.head(audio_url, timeout=30, allow_redirects=True)
@@ -79,7 +79,11 @@ def transcribe_via_openai_whisper(audio_url: str) -> str:
                     if chunk:
                         out.write(chunk)
 
-        client = OpenAI()
+        # Use provided API key or fall back to environment variable
+        api_key_to_use = api_key or os.getenv("OPENAI_API_KEY")
+        if not api_key_to_use:
+            raise RuntimeError("OpenAI API key not provided")
+        client = OpenAI(api_key=api_key_to_use)
         with open(tmp_path, "rb") as f:
             result = client.audio.transcriptions.create(model="whisper-1", file=f)
         return getattr(result, "text", "") or ""
@@ -108,4 +112,4 @@ def get_transcript_text(feed_xml: str, entry: Episode, openai_api_key: Optional[
     if not (openai_api_key or os.getenv("OPENAI_API_KEY")):
         raise RuntimeError("OpenAI API key not provided; cannot transcribe audio.")
 
-    return transcribe_via_openai_whisper(entry.enclosure_url)
+    return transcribe_via_openai_whisper(entry.enclosure_url, openai_api_key)
