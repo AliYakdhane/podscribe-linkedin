@@ -12,7 +12,7 @@ import streamlit as st
 
 # Security configuration
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # "password" hashed with SHA-256
+ADMIN_PASSWORD_HASH = "5ca659c9fa66d91be324e790e225f488e0dca8e954b770afdb2691f553d9ccf6"  # "password" hashed with SHA-256
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
 
 def hash_password(password: str) -> str:
