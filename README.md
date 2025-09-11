@@ -11,6 +11,7 @@ This pulls new episodes from the Apple Podcasts show, retrieves full transcripts
    - `OPENAI_API_KEY` (required for transcription and post generation)
    - `SHOW_ID=1680633614` (AI Daily Brief)
    - Optional: `MAX_EPISODES_PER_RUN` (leave unset or set to `0` for unlimited)
+   - Optional: Supabase configuration for permanent storage
 2. Run setup:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
@@ -39,8 +40,21 @@ powershell -ExecutionPolicy Bypass -File .\scripts\schedule_task.ps1 -Hour 8
 
 This registers a task that runs daily at the specified hour using the project’s virtual environment.
 
+### 6) Supabase Setup (Optional - for permanent storage)
+
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run the SQL schema in `supabase_schema.sql` in your Supabase SQL Editor
+3. Get your project URL and service role key from Supabase settings
+4. Add to `.env`:
+   ```
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+   ```
+
 ### Notes
 - Order of transcript sources: `<podcast:transcript>` tag → OpenAI Whisper (if key).
 - The state of processed episodes is tracked in `data/state.json` to avoid duplicates.
 - To target a different show, update `SHOW_ID` or set `APPLE_EPISODE_URL` (the show id will be parsed from it).
 - By default each run processes all new episodes; set `MAX_EPISODES_PER_RUN` to limit if desired.
+- With Supabase: Files are permanently stored and accessible from anywhere.
+- Without Supabase: Files are stored locally and lost when instance restarts.

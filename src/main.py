@@ -9,7 +9,7 @@ from .config import load_config
 from .apple import extract_show_id_from_apple_url, lookup_feed_url_via_itunes, parse_feed_entries, fetch_feed_xml, sort_episodes, extract_episode_id_from_apple_url, lookup_episode_release_and_show_id
 from .transcripts import get_transcript_text
 from .posts import generate_linkedin_posts
-from .storage import StateStore, build_supabase_client, ensure_bucket, upload_file, upsert_row
+from .storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts
 
 
 def _sanitize_filename(name: str) -> str:
@@ -55,7 +55,7 @@ def run() -> None:
         print(f"Supabase: enabled in config (key={key_src})")
         supabase_client = build_supabase_client(cfg.supabase_url, cfg.supabase_key)
         if supabase_client is not None:
-            ensure_bucket(supabase_client, cfg.supabase_bucket)
+            ensure_tables_exist(supabase_client)
         else:
             print("  Supabase: client not initialized; uploads will be skipped")
     else:
@@ -97,20 +97,15 @@ def run() -> None:
         transcript_path.write_text(transcript_text, encoding="utf-8")
         print(f"  Transcript saved: {transcript_path}")
 
-        # Upload transcript to Supabase (path: transcripts/{filename})
+        # Store transcript in Supabase table
         if supabase_client is not None:
-            remote_path = f"transcripts/{transcript_path.name}"
-            upload_file(supabase_client, cfg.supabase_bucket, remote_path, transcript_path, content_type="text/plain; charset=utf-8")
-            # Write transcript metadata to table
-            upsert_row(
+            store_transcript(
                 supabase_client,
                 cfg.supabase_table_transcripts,
-                {
-                    "guid": e.guid,
-                    "title": e.title,
-                    "published_at": e.published.isoformat() if e.published else None,
-                    "file_path": remote_path,
-                },
+                e.guid,
+                e.title,
+                e.published,
+                transcript_text
             )
 
         # Generate posts if OpenAI configured
@@ -119,20 +114,17 @@ def run() -> None:
                 posts = generate_linkedin_posts(cfg.openai_api_key, transcript_text, e.title)
                 if posts:
                     posts_path = cfg.posts_dir / f"{base_name}.md"
-                    posts_path.write_text("\n\n---\n\n".join(posts), encoding="utf-8")
+                    posts_content = "\n\n---\n\n".join(posts)
+                    posts_path.write_text(posts_content, encoding="utf-8")
                     print(f"  LinkedIn drafts saved: {posts_path}")
                     if supabase_client is not None:
-                        remote_path = f"posts/{posts_path.name}"
-                        upload_file(supabase_client, cfg.supabase_bucket, remote_path, posts_path, content_type="text/markdown; charset=utf-8")
-                        upsert_row(
+                        store_posts(
                             supabase_client,
                             cfg.supabase_table_posts,
-                            {
-                                "guid": e.guid,
-                                "title": e.title,
-                                "published_at": e.published.isoformat() if e.published else None,
-                                "file_path": remote_path,
-                            },
+                            e.guid,
+                            e.title,
+                            e.published,
+                            posts_content
                         )
             except Exception as ex:
                 print(f"  Failed to generate posts: {ex}")
@@ -149,14 +141,7 @@ def run() -> None:
     if processed_count == 0 and starting_dt is not None:
         state._save()
 
-    # Upload state after run (best effort)
-    if supabase_client is not None:
-        try:
-            state_file = cfg.data_dir / "state.json"
-            if state_file.exists():
-                upload_file(supabase_client, cfg.supabase_bucket, "state/state.json", state_file, content_type="application/json")
-        except Exception:
-            pass
+    # State is managed locally - no need to upload to Supabase
 
     if processed_count == 0:
         print("No new episodes to process.")

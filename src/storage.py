@@ -79,40 +79,52 @@ def build_supabase_client(url: Optional[str], key: Optional[str]):
         return None
 
 
-def ensure_bucket(client, bucket_name: str) -> None:
-    """Create bucket if it does not exist (no-op on exists)."""
+def ensure_tables_exist(client) -> None:
+    """Ensure required tables exist (no-op if they exist)."""
     try:
-        buckets = client.storage.list_buckets()
-        names = {b.get("name") for b in (buckets or [])}
-        if bucket_name not in names:
-            # Avoid API differences; do not auto-create. Ask user to create or set correct name.
-            print(f"  Supabase: bucket '{bucket_name}' not found. Please create it in Supabase Storage or set SUPABASE_BUCKET to an existing bucket name.")
-            return
-    except Exception:
-        # Best effort; ignore if already exists or no permission
-        print(f"  Supabase: could not list buckets (insufficient permissions or API change)")
-
-
-def upload_file(client, bucket_name: str, path_in_bucket: str, local_path: Path, content_type: str = "text/plain") -> Optional[str]:
-    """Upload a local file to Supabase Storage. Returns public URL if bucket is public, else None."""
-    try:
-        # Use upsert to overwrite if re-run
-        with open(local_path, "rb") as f:
-            client.storage.from_(bucket_name).upload(
-                path_in_bucket,
-                f,
-                file_options={"content-type": content_type, "upsert": "true", "x-upsert": "true"},
-            )
-        print(f"  Supabase: uploaded '{path_in_bucket}' to bucket '{bucket_name}'")
-        # Try to get a public URL (works if bucket or file is public)
-        try:
-            url = client.storage.from_(bucket_name).get_public_url(path_in_bucket)
-            return getattr(url, "get", lambda k, d=None: None)("publicUrl", None) if hasattr(url, "get") else url
-        except Exception:
-            return None
+        # Test if tables exist by trying to query them
+        client.table("podcast_transcripts").select("id").limit(1).execute()
+        client.table("podcast_posts").select("id").limit(1).execute()
+        print("  Supabase: tables exist and are accessible")
     except Exception as ex:
-        print(f"  Supabase upload failed for '{path_in_bucket}': {ex}")
-        return None
+        print(f"  Supabase: tables may not exist or are not accessible: {ex}")
+        print("  Please run the SQL schema in supabase_schema.sql to create the required tables")
+
+
+def store_transcript(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
+    """Store transcript content directly in Supabase table. Returns True on success."""
+    try:
+        row = {
+            "guid": guid,
+            "title": title,
+            "published_at": published_at.isoformat() if published_at else None,
+            "transcript_content": content,
+        }
+        resp = client.table(table).upsert(row, on_conflict="guid").execute()
+        if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
+            print(f"  Supabase: stored transcript for '{title}'")
+            return True
+    except Exception as ex:
+        print(f"  Supabase transcript storage failed: {ex}")
+    return False
+
+
+def store_posts(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
+    """Store posts content directly in Supabase table. Returns True on success."""
+    try:
+        row = {
+            "guid": guid,
+            "title": title,
+            "published_at": published_at.isoformat() if published_at else None,
+            "posts_content": content,
+        }
+        resp = client.table(table).upsert(row, on_conflict="guid").execute()
+        if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
+            print(f"  Supabase: stored posts for '{title}'")
+            return True
+    except Exception as ex:
+        print(f"  Supabase posts storage failed: {ex}")
+    return False
 
 
 def upsert_row(client, table: str, row: Dict[str, Any]) -> bool:

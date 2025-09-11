@@ -18,7 +18,6 @@ class Config:
     # Supabase
     supabase_url: Optional[str]
     supabase_key: Optional[str]
-    supabase_bucket: str
     supabase_enabled: bool
     supabase_table_transcripts: str
     supabase_table_posts: str
@@ -64,7 +63,6 @@ def load_config() -> Config:
     supabase_url = os.getenv("SUPABASE_URL")
     # Prefer service role for server-side scripts, else fall back to anon
     supabase_key = os.getenv("SUPABASE_SERVICE_ROLE") or os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY")
-    supabase_bucket = os.getenv("SUPABASE_BUCKET", "podcasts")
     supabase_enabled = bool((supabase_url or "").strip() and (supabase_key or "").strip())
     supabase_table_transcripts = os.getenv("SUPABASE_TABLE_TRANSCRIPTS", "podcast_transcripts")
     supabase_table_posts = os.getenv("SUPABASE_TABLE_POSTS", "podcast_posts")
@@ -79,7 +77,6 @@ def load_config() -> Config:
         max_episodes_per_run=max_episodes_per_run,
         supabase_url=supabase_url,
         supabase_key=supabase_key,
-        supabase_bucket=supabase_bucket,
         supabase_enabled=supabase_enabled,
         supabase_table_transcripts=supabase_table_transcripts,
         supabase_table_posts=supabase_table_posts,
