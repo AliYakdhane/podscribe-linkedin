@@ -37,18 +37,18 @@ jobs:
           echo "⏰ Current time: $(date)"
           echo "🔍 Environment check:"
           echo "  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}"
-          echo "  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          echo "  SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}"
           echo "  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}"
           
           # Set environment variables explicitly
           export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
-          export SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          export SUPABASE_SERVICE_ROLE="${{ secrets.SUPABASE_SERVICE_ROLE }}"
           
           # Verify they are set
           echo "🔍 After export:"
           echo "  SUPABASE_URL: ${SUPABASE_URL:0:20}..."
-          echo "  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:0:20}..."
+          echo "  SUPABASE_SERVICE_ROLE: ${SUPABASE_SERVICE_ROLE:0:20}..."
           echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..."
           
           python -m src.main
