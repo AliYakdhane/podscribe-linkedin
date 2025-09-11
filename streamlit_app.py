@@ -164,6 +164,18 @@ def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: i
             st.info(f"🔍 Found SUPABASE_SERVICE_ROLE_KEY: {'Yes' if supabase_key else 'No'}")
             return False
         
+        # Validate URL format
+        if not supabase_url.startswith("https://") or not supabase_url.endswith(".supabase.co"):
+            st.error(f"❌ Invalid Supabase URL format: {supabase_url}")
+            st.info("💡 URL should be: https://your-project-id.supabase.co")
+            return False
+        
+        # Validate key format (JWT tokens start with eyJ)
+        if not supabase_key.startswith("eyJ"):
+            st.error(f"❌ Invalid Supabase service role key format")
+            st.info("💡 Service role key should be a JWT token starting with 'eyJ'")
+            return False
+        
         # Build Supabase client
         st.info(f"🔧 Building Supabase client...")
         st.info(f"🔧 URL: {supabase_url[:20]}..." if supabase_url else "🔧 URL: None")
@@ -177,6 +189,13 @@ def save_configuration_to_supabase(show_id: str, apple_url: str, max_episodes: i
             
             if not supabase_client:
                 st.error("❌ Failed to connect to Supabase - build_supabase_client returned None")
+                st.info("🔍 This usually means there was an error creating the Supabase client")
+                st.info("💡 Check the Streamlit logs for detailed error information")
+                st.info("🔧 Common issues:")
+                st.info("   - Invalid Supabase URL format")
+                st.info("   - Invalid service role key")
+                st.info("   - Network connectivity issues")
+                st.info("   - Supabase service down")
                 return False
             else:
                 st.info("✅ Supabase client built successfully")
