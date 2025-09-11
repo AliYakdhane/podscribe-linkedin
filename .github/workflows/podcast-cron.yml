@@ -5,12 +5,20 @@ on:
     # Run every 5 minutes for testing (change back to '0 */6 * * *' for production)
     - cron: '*/5 * * * *'
   workflow_dispatch: # Allow manual trigger from GitHub UI
+  push:
+    branches: [ main ]
 
 jobs:
   pull-episodes:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Debug Info
+        run: |
+          echo "🚀 Workflow triggered at: $(date)"
+          echo "📋 Triggered by: ${{ github.event_name }}"
+          echo "⏰ Scheduled time: ${{ github.schedule }}"
+      
       - name: Checkout code
         uses: actions/checkout@v4
       
