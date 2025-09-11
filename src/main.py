@@ -18,14 +18,6 @@ def _sanitize_filename(name: str) -> str:
 
 def run() -> None:
     cfg = load_config()
-    
-    # Debug: Log API key info
-    api_key = cfg.openai_api_key
-    if api_key:
-        print(f"🔑 API Key loaded: {api_key[:10]}... (length: {len(api_key)})")
-    else:
-        print("❌ No API key found in config")
-        print(f"Environment OPENAI_API_KEY: {os.getenv('OPENAI_API_KEY', 'NOT SET')[:10] if os.getenv('OPENAI_API_KEY') else 'NOT SET'}")
 
     # If APPLE_EPISODE_URL is provided, set starting baseline from that episode's release date
     starting_show_id = cfg.show_id
