@@ -32,18 +32,25 @@ jobs:
           pip install -r requirements.txt
       
       - name: Run podcast puller
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          # Configuration is now loaded from Supabase user_config table
         run: |
           echo "🤖 Starting automated podcast pull..."
           echo "⏰ Current time: $(date)"
           echo "🔍 Environment check:"
+          echo "  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}"
+          echo "  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          echo "  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}"
+          
+          # Set environment variables explicitly
+          export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+          export SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          
+          # Verify they are set
+          echo "🔍 After export:"
           echo "  SUPABASE_URL: ${SUPABASE_URL:0:20}..."
           echo "  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:0:20}..."
           echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..."
+          
           python -m src.main
           echo "✅ Podcast pull completed"
       
