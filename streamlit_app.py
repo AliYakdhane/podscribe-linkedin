@@ -284,13 +284,13 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
                         status_msg = f"Found {len(pending)} episodes newer than the specified episode URL"
                     else:
                         pending = episodes[:run_limit]
-                        status_msg = f"Could not parse episode URL, using newest {len(pending)} episodes"
+                        status_msg = f"Could not lookup episode info from Apple (ID: {ep_id}), using newest {len(pending)} episodes"
                 else:
                     pending = episodes[:run_limit]
-                    status_msg = f"Could not extract episode ID, using newest {len(pending)} episodes"
-            except Exception:
+                    status_msg = f"Could not extract episode ID from URL, using newest {len(pending)} episodes"
+            except Exception as e:
                 pending = episodes[:run_limit]
-                status_msg = f"Error parsing episode URL, using newest {len(pending)} episodes"
+                status_msg = f"Error parsing episode URL: {str(e)}, using newest {len(pending)} episodes"
         else:
             # No episode URL - use newest episodes
             pending = episodes[:run_limit]

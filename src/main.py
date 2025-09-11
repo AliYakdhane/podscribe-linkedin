@@ -93,13 +93,21 @@ def run() -> None:
     starting_show_id = cfg.show_id
     starting_dt = None
     if cfg.apple_episode_url:
+        print(f"🔍 Parsing Apple episode URL: {cfg.apple_episode_url}")
         ep_id = extract_episode_id_from_apple_url(cfg.apple_episode_url)
+        print(f"📋 Extracted episode ID: {ep_id}")
         if ep_id:
+            print(f"🔍 Looking up episode info from Apple...")
             info = lookup_episode_release_and_show_id(ep_id)
             if info:
                 show_id_from_url, release_dt = info
+                print(f"✅ Found episode info - Show ID: {show_id_from_url}, Release Date: {release_dt}")
                 starting_show_id = starting_show_id or show_id_from_url
                 starting_dt = release_dt
+            else:
+                print(f"❌ Could not lookup episode info from Apple for ID: {ep_id}")
+        else:
+            print(f"❌ Could not extract episode ID from URL: {cfg.apple_episode_url}")
 
     if not starting_show_id:
         raise RuntimeError("SHOW_ID not found. Set SHOW_ID or provide APPLE_EPISODE_URL with an id.")
