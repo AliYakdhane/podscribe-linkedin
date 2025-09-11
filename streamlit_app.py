@@ -229,9 +229,6 @@ with st.sidebar:
 
     # Required OpenAI key for this run
     openai_key_input = st.text_input("OpenAI API Key", value="", type="password", help="Required to transcribe and generate posts.")
-    
-    # AssemblyAI key (optional)
-    assemblyai_key_input = st.text_input("AssemblyAI API Key (optional)", value="", type="password", help="Alternative transcription service.")
 
     # Inputs for Apple episode URL and Show ID (either works; URL can derive ID)
     url_input = st.text_input("Apple episode URL (optional)", value="", help="Paste any Apple Podcasts episode URL; we'll derive the show id.")
@@ -384,9 +381,8 @@ st.divider()
 st.markdown("""
 ### 🚀 How to Use
 
-1. **Get API Keys**: 
+1. **Get API Key**: 
    - [OpenAI API Key](https://platform.openai.com/api-keys) (required for transcription and post generation)
-   - [AssemblyAI API Key](https://www.assemblyai.com/) (optional, for faster transcription)
 
 2. **Configure Podcast**:
    - Enter an Apple Podcasts episode URL, or
@@ -397,7 +393,7 @@ st.markdown("""
 ### 📋 Features
 
 - ✅ Automatic podcast episode detection
-- ✅ Multiple transcription methods (Podcasting 2.0, AssemblyAI, OpenAI Whisper)
+- ✅ Multiple transcription methods (Podcasting 2.0, OpenAI Whisper)
 - ✅ AI-generated LinkedIn post drafts
 - ✅ Progress tracking to avoid duplicates
 - ✅ Cloud storage support (Supabase)

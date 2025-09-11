@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 @dataclass
 class Config:
     openai_api_key: Optional[str]
-    assemblyai_api_key: Optional[str]
     apple_episode_url: Optional[str]
     show_id: Optional[str]
     data_dir: Path
@@ -41,7 +40,6 @@ def load_config() -> Config:
     posts_dir.mkdir(parents=True, exist_ok=True)
 
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    assemblyai_api_key = os.getenv("ASSEMBLYAI_API_KEY")
     apple_episode_url = os.getenv("APPLE_EPISODE_URL")
 
     # Derive show_id either from env or from apple URL
@@ -73,7 +71,6 @@ def load_config() -> Config:
 
     return Config(
         openai_api_key=openai_api_key,
-        assemblyai_api_key=assemblyai_api_key,
         apple_episode_url=apple_episode_url,
         show_id=show_id,
         data_dir=Path(data_dir),
