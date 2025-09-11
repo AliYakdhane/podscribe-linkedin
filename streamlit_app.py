@@ -99,13 +99,13 @@ st.markdown("""
     
     /* Header Styles */
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 3rem 2rem;
-        border-radius: 16px;
+        background: #4f46e5;
+        padding: 2rem;
+        border-radius: 12px;
         margin-bottom: 2rem;
         color: white;
         text-align: center;
-        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
     }
     
     /* Metric Cards */
@@ -132,34 +132,23 @@ st.markdown("""
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        background: #4f46e5;
     }
     
     .metric-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        border-color: #667eea;
+        border-color: #4f46e5;
     }
     
     /* Section Headers */
     .section-header {
         color: #2d3748;
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 3px solid #667eea;
-        position: relative;
-    }
-    
-    .section-header::after {
-        content: '';
-        position: absolute;
-        bottom: -3px;
-        left: 0;
-        width: 60px;
-        height: 3px;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
     }
     
     /* Content Cards */
@@ -175,7 +164,7 @@ st.markdown("""
     
     .content-card:hover {
         box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-        border-color: #667eea;
+        border-color: #4f46e5;
     }
     
     /* Sidebar Styling */
@@ -185,31 +174,32 @@ st.markdown("""
     }
     
     .sidebar-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+        background: #4f46e5;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
     }
     
     /* Button Styles */
     .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #4f46e5;
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 0.75rem 2rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        background: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
     }
     
     /* Input Styles */
@@ -222,8 +212,8 @@ st.markdown("""
     }
     
     .stTextInput > div > div > input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
         outline: none;
     }
     
@@ -235,45 +225,45 @@ st.markdown("""
     }
     
     .stSelectbox > div > div:focus-within {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
     }
     
     /* Status Indicators */
     .status-success {
-        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        background: #10b981;
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
     }
     
     .status-warning {
-        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        background: #f59e0b;
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(237, 137, 54, 0.3);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
     }
     
     .status-error {
-        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        background: #ef4444;
         color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(245, 101, 101, 0.3);
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
     }
     
     /* Content Display */
     .content-display {
         background: #f8fafc;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border-left: 4px solid #667eea;
-        margin: 1rem 0;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #4f46e5;
+        margin: 0.5rem 0;
     }
     
     /* Footer */
@@ -681,141 +671,7 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
 
 # Sidebar
 with st.sidebar:
-    st.markdown("""
-    <div class="sidebar-header">
-        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700;">🎛️ Control Panel</h2>
-        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; opacity: 0.9;">Configure and manage your podcast automation</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Required OpenAI key for this run
-    openai_key_input = st.text_input("OpenAI API Key", value="", type="password", help="Required to transcribe and generate posts.")
-    
-    # Supabase Configuration (optional) - hidden from UI
-    supabase_configured = bool(st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"))
-
-    # Show ID input (Apple episode URL is stored in Supabase configuration)
-    show_id_input = st.text_input("Show ID (optional)", value="", help="Overrides the Show ID stored in Supabase if provided.")
-
-    # Diagnostics
-    diag_feed_url = None
-    try:
-        if load_config:
-            cfg_d = load_config()
-            eff_id = (show_id_input or "").strip()
-            if eff_id and lookup_feed_url_via_itunes:
-                diag_feed_url = lookup_feed_url_via_itunes(eff_id)
-    except Exception as e:
-        st.caption(f"Diagnostic error: {e}")
-
-    if diag_feed_url:
-        st.caption(f"Resolved feed: {diag_feed_url}")
-
-    # Episode limit control - removed, now stored in Supabase
-    run_limit = 1  # Default value for manual runs
-    
-    # Show intelligent episode selection status
-    if openai_key_input and show_id_input:
-        try:
-            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, "", openai_key_input)
-            if eps > 0:
-                st.success(f"✅ {status_msg}")
-            else:
-                st.info(f"ℹ️ {status_msg}")
-        except Exception as e:
-            st.warning(f"⚠️ Could not check episode status: {e}")
-    else:
-        st.caption("Configuration stored in Supabase. Manual runs will pull 1 episode.")
-
-    # Save Configuration Button
-    if st.button("💾 Save Configuration", help="Save your settings to Supabase for the cron job to use"):
-        if openai_key_input and show_id_input:
-            success = save_configuration_to_supabase(
-                show_id=show_id_input,
-                apple_url="",  # Apple URL is managed separately in Supabase
-                max_episodes=1,  # Default episodes per run
-                openai_key=openai_key_input
-            )
-            if success:
-                st.rerun()
-        else:
-            st.error("Please enter OpenAI API key and Show ID")
-
-    disabled = not bool(openai_key_input)
-    if st.button("🚀 Run Pull Now", disabled=disabled):
-        if not openai_key_input:
-            st.error("Please enter an OpenAI API key")
-        else:
-            eps, drafts, status_msg = compute_pending_counts(run_limit, show_id_input, "", openai_key_input)
-            confirm_pull_dialog(eps, drafts, run_limit, show_id_input, "", openai_key_input)
-    
-    # Clear Data Button
-    st.divider()
-    st.markdown("""
-    <div style="background: #fff3cd; padding: 1rem; border-radius: 10px; margin: 1rem 0; border-left: 4px solid #ffc107;">
-        <h3 style="margin: 0; color: #856404;">🗑️ Data Management</h3>
-        <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">Use these tools to clear local or cloud data for testing purposes.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("Clear All Local Data", type="secondary"):
-        try:
-            # Clear local files
-            import shutil
-            if TRANSCRIPTS_DIR.exists():
-                shutil.rmtree(TRANSCRIPTS_DIR)
-                TRANSCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
-            if POSTS_DIR.exists():
-                shutil.rmtree(POSTS_DIR)
-                POSTS_DIR.mkdir(parents=True, exist_ok=True)
-            
-            # Clear state file
-            state_file = DATA_DIR / "state.json"
-            if state_file.exists():
-                state_file.unlink()
-            
-            st.success("✅ All local data cleared! You can now test from scratch.")
-            st.rerun()
-        except Exception as e:
-            st.error(f"❌ Error clearing data: {e}")
-    
-    # Clear Supabase Data Button (if configured)
-    if st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"):
-        if st.button("Clear Supabase Data", type="secondary"):
-            try:
-                # Clear Supabase tables
-                import subprocess
-                import sys
-                
-                env = {
-                    "SUPABASE_URL": st.secrets["SUPABASE_URL"],
-                    "SUPABASE_SERVICE_ROLE_KEY": st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
-                }
-                
-                # Run a script to clear Supabase data
-                result = subprocess.run([
-                    sys.executable, "-c", """
-import os
-from supabase import create_client
-
-url = os.getenv('SUPABASE_URL')
-key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-client = create_client(url, key)
-
-# Clear tables
-client.table('podcast_transcripts').delete().neq('id', 0).execute()
-client.table('podcast_posts').delete().neq('id', 0).execute()
-
-print('Supabase data cleared successfully')
-"""
-                ], env={**os.environ, **env}, capture_output=True, text=True)
-                
-                if result.returncode == 0:
-                    st.success("✅ Supabase data cleared! All transcripts and posts removed from database.")
-                else:
-                    st.error(f"❌ Error clearing Supabase data: {result.stderr}")
-                    
-            except Exception as e:
-                st.error(f"❌ Error clearing Supabase data: {e}")
+    logout_button()
 
 # Process monitoring section removed for cleaner UI
 
@@ -834,15 +690,15 @@ with col1:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #10b981; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">☁️</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Cloud Storage</h3>
-                        <p style="margin: 0; color: #48bb78; font-size: 0.75rem; font-weight: 500;">Active</p>
+                        <p style="margin: 0; color: #10b981; font-size: 0.75rem; font-weight: 500;">Active</p>
                     </div>
                 </div>
-                <div style="width: 8px; height: 8px; background: #48bb78; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -851,15 +707,15 @@ with col1:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #f59e0b; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">⚠️</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Local Only</h3>
-                        <p style="margin: 0; color: #ed8936; font-size: 0.75rem; font-weight: 500;">Temporary</p>
+                        <p style="margin: 0; color: #f59e0b; font-size: 0.75rem; font-weight: 500;">Temporary</p>
                     </div>
                 </div>
-                <div style="width: 8px; height: 8px; background: #ed8936; border-radius: 50%;"></div>
+                <div style="width: 8px; height: 8px; background: #f59e0b; border-radius: 50%;"></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -871,16 +727,16 @@ with col2:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #4f46e5; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">📝</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Transcripts</h3>
-                        <p style="margin: 0; color: #667eea; font-size: 0.75rem; font-weight: 500;">Available</p>
+                        <p style="margin: 0; color: #4f46e5; font-size: 0.75rem; font-weight: 500;">Available</p>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.75rem; font-weight: 700; color: #667eea; line-height: 1;">{len(transcripts)}</div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #4f46e5; line-height: 1;">{len(transcripts)}</div>
                 </div>
             </div>
         </div>
@@ -890,16 +746,16 @@ with col2:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #4f46e5; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">📝</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">Transcripts</h3>
-                        <p style="margin: 0; color: #667eea; font-size: 0.75rem; font-weight: 500;">Available</p>
+                        <p style="margin: 0; color: #4f46e5; font-size: 0.75rem; font-weight: 500;">Available</p>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.75rem; font-weight: 700; color: #667eea; line-height: 1;">0</div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #4f46e5; line-height: 1;">0</div>
                 </div>
             </div>
         </div>
@@ -912,16 +768,16 @@ with col3:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #8b5cf6; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">📱</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">LinkedIn Posts</h3>
-                        <p style="margin: 0; color: #9f7aea; font-size: 0.75rem; font-weight: 500;">Generated</p>
+                        <p style="margin: 0; color: #8b5cf6; font-size: 0.75rem; font-weight: 500;">Generated</p>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.75rem; font-weight: 700; color: #9f7aea; line-height: 1;">{len(posts)}</div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #8b5cf6; line-height: 1;">{len(posts)}</div>
                 </div>
             </div>
         </div>
@@ -931,16 +787,16 @@ with col3:
         <div class="metric-card">
             <div style="display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center;">
-                    <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
+                    <div style="width: 32px; height: 32px; background: #8b5cf6; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
                         <span style="color: white; font-size: 1rem;">📱</span>
                     </div>
                     <div>
                         <h3 style="margin: 0; color: #2d3748; font-size: 0.95rem; font-weight: 600;">LinkedIn Posts</h3>
-                        <p style="margin: 0; color: #9f7aea; font-size: 0.75rem; font-weight: 500;">Generated</p>
+                        <p style="margin: 0; color: #8b5cf6; font-size: 0.75rem; font-weight: 500;">Generated</p>
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.75rem; font-weight: 700; color: #9f7aea; line-height: 1;">0</div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: #8b5cf6; line-height: 1;">0</div>
                 </div>
             </div>
         </div>
@@ -1077,6 +933,6 @@ with cols[1]:
 # Professional footer
 st.markdown("""
 <div class="footer">
-    🎙️ <strong>Podcast AI Studio</strong> - Powered by OpenAI & Supabase
+    🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
