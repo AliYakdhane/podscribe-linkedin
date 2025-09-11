@@ -69,9 +69,9 @@ except Exception as e:
 # Dialog to confirm pull
 @st.dialog("Confirm Pull")
 def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, show_id_override: str, url_override: str, openai_key: str):
-    st.write(f"Episodes to pull now: {'All' if run_limit == 0 else episodes_count}")
-    st.write(f"LinkedIn drafts to generate: {drafts_count if run_limit != 0 else episodes_count * 3}")
-    st.caption(f"This run limit: {'All' if run_limit == 0 else run_limit}")
+    st.write(f"Episodes to pull now: {episodes_count}")
+    st.write(f"LinkedIn drafts to generate: {drafts_count}")
+    st.caption(f"This run limit: {run_limit}")
     if show_id_override:
         st.caption(f"Show ID: {show_id_override}")
     if url_override:
@@ -84,8 +84,8 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
         if st.button("Run Now", type="primary"):
             try:
                 env = {}
-                # Apply per-run limit override (0 means unlimited)
-                env["MAX_EPISODES_PER_RUN"] = "0" if run_limit == 0 else str(run_limit)
+                # Apply per-run limit override
+                env["MAX_EPISODES_PER_RUN"] = str(run_limit)
                 # Apply required OpenAI key
                 env["OPENAI_API_KEY"] = openai_key
                 # Apply Supabase configuration from secrets
@@ -156,8 +156,8 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                 st.rerun()
 
 
-def compute_pending_counts(run_limit: int | None = None, show_id_override: str = "", url_override: str = "", openai_key: str = "") -> tuple[int, int]:
-    """Return (episodes_to_process, drafts_to_generate) using only episodes newer than the last processed publish date."""
+def compute_pending_counts(run_limit: int, show_id_override: str = "", url_override: str = "", openai_key: str = "") -> tuple[int, int]:
+    """Return (episodes_to_process, drafts_to_generate) for the specified number of episodes."""
     try:
         if load_config is None or not openai_key:
             return (0, 0)
@@ -183,42 +183,9 @@ def compute_pending_counts(run_limit: int | None = None, show_id_override: str =
 
         episodes = parse_feed_entries(feed_url)
         episodes = sort_episodes(episodes)
-        state = StateStore(cfg.data_dir / "state.json")
 
-        # Derive baseline from URL if provided
-        url_baseline_dt = None
-        if url_override:
-            try:
-                ep_id = extract_episode_id_from_apple_url(url_override)
-                if ep_id:
-                    info = lookup_episode_release_and_show_id(ep_id)
-                    if info:
-                        _, release_dt = info
-                        url_baseline_dt = release_dt
-            except Exception:
-                url_baseline_dt = None
-
-        latest_dt = state.get_latest_published()
-        # Effective baseline is the max of stored baseline and URL baseline
-        if latest_dt is None:
-            effective_baseline = url_baseline_dt
-        elif url_baseline_dt is None:
-            effective_baseline = latest_dt
-        else:
-            effective_baseline = max(latest_dt, url_baseline_dt)
-
-        if effective_baseline is None and not state.processed_guids:
-            pending = episodes[:]  # nothing processed yet; consider newest first
-        else:
-            pending = [e for e in episodes if (effective_baseline is None or (e.published is not None and e.published > effective_baseline))]
-
-        # Apply override first, else cfg limit
-        if run_limit and run_limit > 0:
-            pending = pending[: run_limit]
-        elif run_limit == 0:
-            pass  # unlimited for this preview
-        elif cfg.max_episodes_per_run and cfg.max_episodes_per_run > 0:
-            pending = pending[: cfg.max_episodes_per_run]
+        # Take the specified number of episodes (newest first)
+        pending = episodes[:run_limit]
 
         episodes_count = len(pending)
         drafts_per_episode = 3  # OpenAI key is required, so drafts will be generated
@@ -250,33 +217,21 @@ with st.sidebar:
 
     # Diagnostics
     diag_feed_url = None
-    diag_latest = None
     try:
         if load_config:
             cfg_d = load_config()
             eff_id = (show_id_input or "").strip() or (extract_show_id_from_apple_url((url_input or "").strip()) if extract_show_id_from_apple_url else "")
             if eff_id and lookup_feed_url_via_itunes:
                 diag_feed_url = lookup_feed_url_via_itunes(eff_id)
-            if cfg_d and StateStore:
-                s = StateStore(cfg_d.data_dir / "state.json")
-                dt = s.get_latest_published()
-                diag_latest = dt.isoformat() if dt else "None"
     except Exception as e:
         st.caption(f"Diagnostic error: {e}")
 
     if diag_feed_url:
         st.caption(f"Resolved feed: {diag_feed_url}")
-    st.caption(f"Latest processed publish date: {diag_latest or 'None'}")
 
-    # New toggle: pull all newer than baseline
-    pull_all = st.checkbox("Pull all newer than baseline", value=True)
-
-    # Per-run limit control (disabled when pull_all)
-    if pull_all:
-        run_limit = 0
-        st.caption("This run will pull all newer episodes.")
-    else:
-        run_limit = st.number_input("Episodes to pull now", min_value=1, value=1, step=1)
+    # Episode limit control
+    run_limit = st.number_input("Episodes to pull now", min_value=1, value=1, step=1)
+    st.caption(f"This run will pull {run_limit} episode(s).")
 
     disabled = not bool(openai_key_input)
     if st.button("🚀 Run Pull Now", disabled=disabled):
