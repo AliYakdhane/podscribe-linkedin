@@ -298,8 +298,7 @@ if not is_authenticated():
     login_form()
     st.stop()
 
-# User is authenticated - show logout button and continue with main app
-logout_button()
+# User is authenticated - continue with main app
 
 # Professional Header
 st.markdown("""
