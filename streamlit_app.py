@@ -88,11 +88,11 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                 env["MAX_EPISODES_PER_RUN"] = "0" if run_limit == 0 else str(run_limit)
                 # Apply required OpenAI key
                 env["OPENAI_API_KEY"] = openai_key
-                # Apply Supabase configuration
-                if supabase_url_input:
-                    env["SUPABASE_URL"] = supabase_url_input
-                if supabase_key_input:
-                    env["SUPABASE_SERVICE_ROLE_KEY"] = supabase_key_input
+                # Apply Supabase configuration from secrets
+                if st.secrets.get("SUPABASE_URL"):
+                    env["SUPABASE_URL"] = st.secrets["SUPABASE_URL"]
+                if st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"):
+                    env["SUPABASE_SERVICE_ROLE_KEY"] = st.secrets["SUPABASE_SERVICE_ROLE_KEY"]
                 # Apply ID/URL overrides
                 if show_id_override:
                     env["SHOW_ID"] = show_id_override
@@ -237,8 +237,12 @@ with st.sidebar:
     
     # Supabase Configuration (optional)
     st.subheader("☁️ Supabase Storage (Optional)")
-    supabase_url_input = st.text_input("Supabase URL", value="", help="For permanent storage (e.g., https://your-project.supabase.co)")
-    supabase_key_input = st.text_input("Supabase Service Role Key", value="", type="password", help="Service role key for Supabase")
+    # Check if Supabase is configured via secrets
+    supabase_configured = bool(st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"))
+    if supabase_configured:
+        st.success("✅ Supabase configured via secrets")
+    else:
+        st.info("💡 Configure Supabase in Streamlit secrets for permanent storage")
 
     # Inputs for Apple episode URL and Show ID (either works; URL can derive ID)
     url_input = st.text_input("Apple episode URL (optional)", value="", help="Paste any Apple Podcasts episode URL; we'll derive the show id.")
@@ -345,7 +349,7 @@ if "running_process" in st.session_state and st.session_state["running_process"]
         st.rerun()
 
 # Supabase Status
-if supabase_url_input and supabase_key_input:
+if st.secrets.get("SUPABASE_URL") and st.secrets.get("SUPABASE_SERVICE_ROLE_KEY"):
     st.success("☁️ Supabase storage enabled - files will be permanently stored")
 else:
     st.info("💾 Local storage only - files will be lost when instance restarts")
