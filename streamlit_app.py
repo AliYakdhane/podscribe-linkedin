@@ -83,10 +83,88 @@ def logout_button():
 
 # Set page config first
 st.set_page_config(
-    page_title="Podcast Transcripts & Posts", 
+    page_title="Podcast AI Studio", 
+    page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Custom CSS for professional styling
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+    }
+    .metric-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-left: 4px solid #1f4e79;
+        margin-bottom: 1rem;
+    }
+    .section-header {
+        color: #1f4e79;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e6f3ff;
+    }
+    .status-success {
+        background: #e8f5e8;
+        color: #2d5d2d;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+        margin: 0.5rem 0;
+    }
+    .status-warning {
+        background: #fff3cd;
+        color: #856404;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        border-left: 4px solid #ffc107;
+        margin: 0.5rem 0;
+    }
+    .content-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+    }
+    .sidebar .sidebar-content {
+        background: #f8f9fa;
+    }
+    .stButton > button {
+        background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(31, 78, 121, 0.3);
+    }
+    .stTextInput > div > div > input {
+        border-radius: 8px;
+        border: 2px solid #e1e5e9;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #1f4e79;
+        box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Main authentication check
 if not is_authenticated():
@@ -96,8 +174,15 @@ if not is_authenticated():
 # User is authenticated - show logout button and continue with main app
 logout_button()
 
-st.title("🎙️ Podcast Transcripts & LinkedIn Drafts")
-st.markdown("**Automatically pull podcast episodes, transcribe them, and generate LinkedIn post drafts**")
+# Professional Header
+st.markdown("""
+<div class="main-header">
+    <h1 style="margin: 0; font-size: 2.5rem;">🎙️ Podcast AI Studio</h1>
+    <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; opacity: 0.9;">
+        Automated podcast transcription and LinkedIn content generation
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 # Initialize session state
 if "last_run_output" not in st.session_state:
@@ -448,7 +533,11 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
 
 # Sidebar
 with st.sidebar:
-    st.header("🎛️ Controls")
+    st.markdown("""
+    <div style="background: linear-gradient(90deg, #1f4e79 0%, #2d5aa0 100%); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; color: white;">
+        <h2 style="margin: 0; text-align: center;">🎛️ Control Panel</h2>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Required OpenAI key for this run
     openai_key_input = st.text_input("OpenAI API Key", value="", type="password", help="Required to transcribe and generate posts.")
@@ -513,7 +602,12 @@ with st.sidebar:
     
     # Clear Data Button
     st.divider()
-    st.subheader("🗑️ Clear Data")
+    st.markdown("""
+    <div style="background: #fff3cd; padding: 1rem; border-radius: 10px; margin: 1rem 0; border-left: 4px solid #ffc107;">
+        <h3 style="margin: 0; color: #856404;">🗑️ Data Management</h3>
+        <p style="margin: 0.5rem 0 0 0; color: #856404; font-size: 0.9rem;">Use these tools to clear local or cloud data for testing purposes.</p>
+    </div>
+    """, unsafe_allow_html=True)
     if st.button("Clear All Local Data", type="secondary"):
         try:
             # Clear local files
@@ -576,29 +670,73 @@ print('Supabase data cleared successfully')
 
 # Process monitoring section removed for cleaner UI
 
-# Supabase Status
+# System Status Dashboard
+st.markdown('<h2 class="section-header">📊 System Status</h2>', unsafe_allow_html=True)
+
 supabase_url = st.secrets.get("SUPABASE_URL")
 supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
 
-if supabase_url and supabase_key:
-    st.success("☁️ Supabase storage enabled - data is permanently stored and synchronized")
-    
-    # Show data counts
+# Create status cards
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    if supabase_url and supabase_key:
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #4caf50;">☁️ Cloud Storage</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Active & Synchronized</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #ff9800;">⚠️ Local Only</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Data will be lost on restart</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+with col2:
     try:
         transcripts = load_transcripts_from_supabase()
-        posts = load_posts_from_supabase()
-        st.info(f"📊 Database contains: {len(transcripts)} transcripts, {len(posts)} LinkedIn posts")
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #1f4e79;">📝 Transcripts</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">{len(transcripts)}</p>
+        </div>
+        """, unsafe_allow_html=True)
     except:
-        pass
-else:
-    st.warning("⚠️ Supabase not configured - data will be lost when instance restarts")
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #1f4e79;">📝 Transcripts</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">0</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Main content
+with col3:
+    try:
+        posts = load_posts_from_supabase()
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #1f4e79;">📱 LinkedIn Posts</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">{len(posts)}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    except:
+        st.markdown("""
+        <div class="metric-card">
+            <h3 style="margin: 0; color: #1f4e79;">📱 LinkedIn Posts</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.5rem; font-weight: bold;">0</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+# Main Content Section
+st.markdown('<h2 class="section-header">📚 Content Library</h2>', unsafe_allow_html=True)
+
 cols = st.columns(2)
 
 # Left: transcripts list
 with cols[0]:
-    st.subheader("📝 Transcripts")
+    st.markdown('<h3 class="section-header" style="font-size: 1.3rem; margin-bottom: 1rem;">📝 Podcast Transcripts</h3>', unsafe_allow_html=True)
     
     # Load transcripts from Supabase
     transcripts = load_transcripts_from_supabase()
@@ -647,7 +785,7 @@ with cols[0]:
 
 # Right: posts list
 with cols[1]:
-    st.subheader("📱 LinkedIn Drafts")
+    st.markdown('<h3 class="section-header" style="font-size: 1.3rem; margin-bottom: 1rem;">📱 LinkedIn Drafts</h3>', unsafe_allow_html=True)
     
     # Load posts from Supabase
     posts = load_posts_from_supabase()
@@ -710,28 +848,36 @@ with cols[1]:
 # Footer
 st.divider()
 st.markdown("""
-### 🚀 How to Use
-
-1. **Get API Key**: 
-   - [OpenAI API Key](https://platform.openai.com/api-keys) (required for transcription and post generation)
-
-2. **Configure Podcast**:
-   - Enter a Show ID (Apple episode URLs are managed in Supabase configuration)
-
-3. **Run**: Click "Run Pull Now" to fetch new episodes and generate LinkedIn drafts
-
-### 📋 Features
-
-- ✅ Automatic podcast episode detection
-- ✅ Multiple transcription methods (Podcasting 2.0, OpenAI Whisper)
-- ✅ AI-generated LinkedIn post drafts
-- ✅ Progress tracking to avoid duplicates
-- ✅ Cloud storage support (Supabase)
-
-### 🔧 For Developers
-
-This app can be deployed on [Streamlit Community Cloud](https://streamlit.io/cloud) or run locally.
-""")
+<div style="background: #f8f9fa; padding: 2rem; border-radius: 10px; margin-top: 2rem; border-left: 4px solid #1f4e79;">
+    <h3 style="color: #1f4e79; margin-top: 0;">🚀 Quick Start Guide</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div>
+            <h4 style="color: #1f4e79;">Setup</h4>
+            <ol style="color: #666; line-height: 1.6;">
+                <li>Get your <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI API Key</a></li>
+                <li>Enter Show ID in the sidebar</li>
+                <li>Click "Save Configuration"</li>
+                <li>Click "Run Pull Now" to start</li>
+            </ol>
+        </div>
+        <div>
+            <h4 style="color: #1f4e79;">Features</h4>
+            <ul style="color: #666; line-height: 1.6;">
+                <li>✅ Automated episode detection</li>
+                <li>✅ AI-powered transcription</li>
+                <li>✅ LinkedIn post generation</li>
+                <li>✅ Cloud storage & sync</li>
+                <li>✅ Scheduled automation</li>
+            </ul>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #dee2e6;">
+        <p style="color: #666; margin: 0; font-size: 0.9rem;">
+            🎙️ <strong>Podcast AI Studio</strong> - Powered by OpenAI & Supabase
+        </p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Debug information
 with st.expander("🔍 Debug Information"):
