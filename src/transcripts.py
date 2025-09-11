@@ -83,6 +83,9 @@ def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None)
         api_key_to_use = api_key or os.getenv("OPENAI_API_KEY")
         if not api_key_to_use:
             raise RuntimeError("OpenAI API key not provided")
+        
+        # Debug: Log API key info
+        print(f"🔑 Using API key: {api_key_to_use[:10]}... (length: {len(api_key_to_use)})")
         client = OpenAI(api_key=api_key_to_use)
         with open(tmp_path, "rb") as f:
             result = client.audio.transcriptions.create(model="whisper-1", file=f)

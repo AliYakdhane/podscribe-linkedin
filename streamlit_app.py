@@ -88,6 +88,8 @@ def confirm_pull_dialog(episodes_count: int, drafts_count: int, run_limit: int, 
                 env["MAX_EPISODES_PER_RUN"] = "0" if run_limit == 0 else str(run_limit)
                 # Apply required OpenAI key
                 env["OPENAI_API_KEY"] = openai_key
+                # Debug: Log the API key (first 10 chars only for security)
+                st.write(f"🔑 API Key being used: {openai_key[:10]}..." if openai_key else "❌ No API key provided")
                 # Apply ID/URL overrides
                 if show_id_override:
                     env["SHOW_ID"] = show_id_override
