@@ -30,30 +30,42 @@ def _strip_srt(srt_text: str) -> str:
 def _fetch_text_from_url(url: str) -> str:
     resp = requests.get(url, timeout=60)
     resp.raise_for_status()
+    
+    # Check content length before processing
+    content_length = resp.headers.get("Content-Length")
+    if content_length and content_length.isdigit() and int(content_length) > 25_000_000:  # 25MB limit
+        raise RuntimeError(f"Transcript file too large ({int(content_length)} bytes), exceeds processing limit")
+    
     ctype = resp.headers.get("Content-Type", "").split(";")[0].strip().lower()
+    
+    # Get the content first to check its size
+    content = resp.text
+    if len(content.encode('utf-8')) > 25_000_000:  # 25MB limit
+        raise RuntimeError(f"Transcript content too large ({len(content.encode('utf-8'))} bytes), exceeds processing limit")
+    
     if ctype in {"text/plain", "text/vtt"}:
-        return resp.text
+        return content
     if ctype in {"application/srt", "application/x-subrip"}:
-        return _strip_srt(resp.text)
+        return _strip_srt(content)
     if ctype in {"application/json", "text/json"}:
-        data = resp.json()
-        # Try common shapes
-        if isinstance(data, dict):
-            if "results" in data and isinstance(data["results"], list):
-                return "\n".join([seg.get("text", "").strip() for seg in data["results"] if seg.get("text")])
-            if "segments" in data and isinstance(data["segments"], list):
-                return "\n".join([seg.get("text", "").strip() for seg in data["segments"] if seg.get("text")])
-            if "text" in data and isinstance(data["text"], str):
-                return data["text"].strip()
-        if isinstance(data, list):
-            return "\n".join([str(x) for x in data])
-        # Fallback to raw
-        return json.dumps(data)
+        try:
+            data = resp.json()
+            # Try common shapes
+            if isinstance(data, dict):
+                if "results" in data and isinstance(data["results"], list):
+                    return "\n".join([seg.get("text", "").strip() for seg in data["results"] if seg.get("text")])
+                if "segments" in data and isinstance(data["segments"], list):
+                    return "\n".join([seg.get("text", "").strip() for seg in data["segments"] if seg.get("text")])
+                if "text" in data and isinstance(data["text"], str):
+                    return data["text"].strip()
+            if isinstance(data, list):
+                return "\n".join([str(x) for x in data])
+            # Fallback to raw
+            return json.dumps(data)
+        except Exception as e:
+            raise RuntimeError(f"Failed to parse JSON transcript: {e}")
     # Fallback to treat as text
-    try:
-        return resp.text
-    except Exception:
-        return ""
+    return content
 
 
 def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None) -> str:
