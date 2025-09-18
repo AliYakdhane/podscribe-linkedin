@@ -921,12 +921,31 @@ with cols[0]:
             </div>
             """, unsafe_allow_html=True)
             
-            # Add simple copy button
+            # Add direct copy button with JavaScript
             col1, col2 = st.columns([1, 10])
             with col1:
-                if st.button("📋 Copy", key=f"copy_icon_{selected_idx}", help="Copy transcript text", use_container_width=False):
-                    st.code(transcript_content, language="text")
-                    st.success("✅ Transcript copied! Select all text above and use Ctrl+C to copy.")
+                # Create a hidden textarea with the transcript content
+                transcript_id = f"transcript_{selected_idx}"
+                st.markdown(f"""
+                <textarea id="{transcript_id}" style="display: none;">{transcript_content}</textarea>
+                <button onclick="copyToClipboard('{transcript_id}')" 
+                        style="background: #374151; border: 1px solid #4b5563; color: #f3f4f6; 
+                               padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; 
+                               font-size: 0.85rem;" 
+                        onmouseover="this.style.background='#4b5563'" 
+                        onmouseout="this.style.background='#374151'">
+                    📋 Copy
+                </button>
+                <script>
+                function copyToClipboard(elementId) {{
+                    var textArea = document.getElementById(elementId);
+                    textArea.select();
+                    textArea.setSelectionRange(0, 99999); // For mobile devices
+                    document.execCommand('copy');
+                    alert('Transcript copied to clipboard!');
+                }}
+                </script>
+                """, unsafe_allow_html=True)
             
             # Create a unique key for this transcript's expand/collapse state
             transcript_key = f"transcript_expanded_{selected_idx}"
