@@ -399,36 +399,57 @@ def load_transcripts_from_supabase():
         transcripts_by_guid = {}
         for record in result.data:
             original_guid = record.get('original_guid', record.get('guid'))
-            
-            if original_guid not in transcripts_by_guid:
-                transcripts_by_guid[original_guid] = {
-                    'guid': original_guid,
-                    'title': record.get('title', '').replace(' (Part 1/1)', '').replace(' (Part 1/2)', '').replace(' (Part 2/2)', ''),
-                    'published_at': record.get('published_at'),
-                    'transcript_content': '',
-                    'chunks': []
-                }
-            
-            # Store chunk info
             chunk_index = record.get('chunk_index', 1)
             total_chunks = record.get('total_chunks', 1)
-            chunk_content = record.get('transcript_content', '')
             
-            transcripts_by_guid[original_guid]['chunks'].append({
-                'index': chunk_index,
-                'total': total_chunks,
-                'content': chunk_content
-            })
+            # If this is a chunked transcript (total_chunks > 1)
+            if total_chunks > 1:
+                if original_guid not in transcripts_by_guid:
+                    # Clean title by removing chunk info
+                    clean_title = record.get('title', '')
+                    if ' (Part ' in clean_title:
+                        clean_title = clean_title.split(' (Part ')[0]
+                    
+                    transcripts_by_guid[original_guid] = {
+                        'guid': original_guid,
+                        'title': clean_title,
+                        'published_at': record.get('published_at'),
+                        'transcript_content': '',
+                        'chunks': []
+                    }
+                
+                # Store chunk info
+                chunk_content = record.get('transcript_content', '')
+                transcripts_by_guid[original_guid]['chunks'].append({
+                    'index': chunk_index,
+                    'total': total_chunks,
+                    'content': chunk_content
+                })
+            else:
+                # This is a non-chunked transcript, treat as individual record
+                clean_title = record.get('title', '')
+                if ' (Part ' in clean_title:
+                    clean_title = clean_title.split(' (Part ')[0]
+                
+                transcripts_by_guid[record.get('guid')] = {
+                    'guid': record.get('guid'),
+                    'title': clean_title,
+                    'published_at': record.get('published_at'),
+                    'transcript_content': record.get('transcript_content', ''),
+                    'chunks': []
+                }
         
         # Reassemble chunks in correct order
         reassembled_transcripts = []
-        for original_guid, transcript_data in transcripts_by_guid.items():
-            chunks = transcript_data['chunks']
-            chunks.sort(key=lambda x: x['index'])  # Sort by chunk index
-            
-            # Reassemble content
-            full_content = ' '.join([chunk['content'] for chunk in chunks])
-            transcript_data['transcript_content'] = full_content
+        for guid, transcript_data in transcripts_by_guid.items():
+            if transcript_data['chunks']:
+                # This is a chunked transcript, reassemble
+                chunks = transcript_data['chunks']
+                chunks.sort(key=lambda x: x['index'])  # Sort by chunk index
+                
+                # Reassemble content
+                full_content = ' '.join([chunk['content'] for chunk in chunks])
+                transcript_data['transcript_content'] = full_content
             
             # Remove chunks info for display
             del transcript_data['chunks']
