@@ -308,6 +308,25 @@ st.markdown("""
         background: rgba(59, 130, 246, 0.1) !important;
         color: #2563eb !important;
     }
+    
+    /* Copy icon button styling */
+    .stButton > button[title="Copy transcript text"] {
+        background: transparent !important;
+        border: 1px solid #4b5563 !important;
+        color: #9ca3af !important;
+        text-decoration: none !important;
+        font-size: 1.2rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 4px !important;
+        min-width: auto !important;
+        width: auto !important;
+    }
+    
+    .stButton > button[title="Copy transcript text"]:hover {
+        background: #374151 !important;
+        border-color: #6b7280 !important;
+        color: #f3f4f6 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -898,15 +917,24 @@ with cols[0]:
                         <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
                         <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
                     </div>
-                    <div style="cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background-color 0.2s;" 
-                         onmouseover="this.style.backgroundColor='#374151'" 
-                         onmouseout="this.style.backgroundColor='transparent'"
-                         onclick="navigator.clipboard.writeText(`{transcript_content.replace('`', '\\`').replace('$', '\\$')}`).then(() => alert('Transcript copied to clipboard!'))">
-                        <span style="font-size: 1.2rem;">📋</span>
-                    </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Add copy button as a small icon button
+            col1, col2 = st.columns([1, 10])
+            with col1:
+                if st.button("📋", key=f"copy_icon_{selected_idx}", help="Copy transcript text", use_container_width=False):
+                    st.session_state[f"show_copy_{selected_idx}"] = True
+            
+            # Show copyable text if copy button was clicked
+            if st.session_state.get(f"show_copy_{selected_idx}", False):
+                st.markdown("**Copy this text:**")
+                st.code(transcript_content, language="text")
+                st.success("✅ Text ready to copy! Select all text above and use Ctrl+C to copy.")
+                if st.button("✖️ Close", key=f"close_copy_{selected_idx}"):
+                    st.session_state[f"show_copy_{selected_idx}"] = False
+                    st.rerun()
             
             # Create a unique key for this transcript's expand/collapse state
             transcript_key = f"transcript_expanded_{selected_idx}"
