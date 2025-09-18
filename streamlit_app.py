@@ -882,7 +882,7 @@ with cols[0]:
             """, unsafe_allow_html=True)
             
             # Create a unique key for this transcript's expand/collapse state
-            transcript_key = f"transcript_expanded_{i}"
+            transcript_key = f"transcript_expanded_{selected_idx}"
             
             # Check if transcript is expanded
             is_expanded = st.session_state.get(transcript_key, False)
@@ -903,7 +903,7 @@ with cols[0]:
                 
                 col1, col2 = st.columns([1, 4])
                 with col1:
-                    if st.button("See More", key=f"expand_{i}", type="secondary"):
+                    if st.button("See More", key=f"expand_{selected_idx}", type="secondary"):
                         st.session_state[transcript_key] = True
                         st.rerun()
             else:
@@ -918,7 +918,7 @@ with cols[0]:
                 if len(formatted_content) > 1000:
                     col1, col2 = st.columns([1, 4])
                     with col1:
-                        if st.button("See Less", key=f"collapse_{i}", type="secondary"):
+                        if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary"):
                             st.session_state[transcript_key] = False
                             st.rerun()
 
