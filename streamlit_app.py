@@ -291,6 +291,23 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Custom button styling for See More/Less */
+    .stButton > button {
+        background: transparent !important;
+        border: none !important;
+        color: #3b82f6 !important;
+        text-decoration: underline !important;
+        font-size: 0.9rem !important;
+        padding: 0.25rem 0.5rem !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    
+    .stButton > button:hover {
+        background: rgba(59, 130, 246, 0.1) !important;
+        color: #2563eb !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -875,9 +892,19 @@ with cols[0]:
                 date_str = 'Unknown date'
             
             st.markdown(f"""
-            <div class="content-display">
-                <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
-                <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
+            <div class="content-display" style="position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+                        <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
+                    </div>
+                    <div style="cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background-color 0.2s;" 
+                         onmouseover="this.style.backgroundColor='#374151'" 
+                         onmouseout="this.style.backgroundColor='transparent'"
+                         onclick="navigator.clipboard.writeText(`{transcript_content.replace('`', '\\`').replace('$', '\\$')}`).then(() => alert('Transcript copied to clipboard!'))">
+                        <span style="font-size: 1.2rem;">📋</span>
+                    </div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -901,15 +928,17 @@ with cols[0]:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                col1, col2, col3 = st.columns([1, 1, 3])
-                with col1:
-                    if st.button("See More", key=f"expand_{selected_idx}", type="secondary"):
-                        st.session_state[transcript_key] = True
-                        st.rerun()
-                with col2:
-                    if st.button("📋 Copy", key=f"copy_preview_{selected_idx}", type="secondary"):
-                        st.code(preview_content, language="text")
-                        st.success("Preview copied! Use Ctrl+A and Ctrl+C to copy the text above.")
+                st.markdown("""
+                <div style="text-align: center; margin-top: 0.5rem;">
+                """, unsafe_allow_html=True)
+                
+                if st.button("See More", key=f"expand_{selected_idx}", type="secondary", use_container_width=False):
+                    st.session_state[transcript_key] = True
+                    st.rerun()
+                
+                st.markdown("""
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 st.markdown(f"""
                 <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
@@ -920,22 +949,17 @@ with cols[0]:
                 """, unsafe_allow_html=True)
                 
                 if len(formatted_content) > 1000:
-                    col1, col2, col3 = st.columns([1, 1, 3])
-                    with col1:
-                        if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary"):
-                            st.session_state[transcript_key] = False
-                            st.rerun()
-                    with col2:
-                        if st.button("📋 Copy", key=f"copy_full_{selected_idx}", type="secondary"):
-                            st.code(formatted_content, language="text")
-                            st.success("Full transcript copied! Use Ctrl+A and Ctrl+C to copy the text above.")
-                else:
-                    # For short content, just show copy button
-                    col1, col2 = st.columns([1, 4])
-                    with col1:
-                        if st.button("📋 Copy", key=f"copy_short_{selected_idx}", type="secondary"):
-                            st.code(formatted_content, language="text")
-                            st.success("Transcript copied! Use Ctrl+A and Ctrl+C to copy the text above.")
+                    st.markdown("""
+                    <div style="text-align: center; margin-top: 0.5rem;">
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary", use_container_width=False):
+                        st.session_state[transcript_key] = False
+                        st.rerun()
+                    
+                    st.markdown("""
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # Right: posts list
 with cols[1]:
