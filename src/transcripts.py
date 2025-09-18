@@ -74,31 +74,47 @@ def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None)
         head = requests.head(audio_url, timeout=30, allow_redirects=True)
         if head.ok:
             cl = head.headers.get("Content-Length")
-            if cl and cl.isdigit() and int(cl) > 24_000_000:
-                raise RuntimeError("Audio file exceeds Whisper size limit (~25MB).")
-    except Exception:
-        # If HEAD fails, continue and let upload attempt handle errors
-        pass
+            if cl and cl.isdigit() and int(cl) > 20_000_000:  # 20MB to be safe
+                raise RuntimeError(f"Audio file too large ({int(cl)} bytes), exceeds Whisper limit (20MB)")
+    except Exception as e:
+        print(f"  ⚠️ Could not check audio file size: {e}")
+        # If HEAD fails, continue but be more cautious
 
     tmp_dir = tempfile.gettempdir()
     tmp_path = os.path.join(tmp_dir, f"podcast_{uuid4().hex}.mp3")
 
     try:
+        print(f"  📥 Downloading audio file...")
+        downloaded_size = 0
+        max_size = 20_000_000  # 20MB limit
+        
         with requests.get(audio_url, stream=True, timeout=120) as r:
             r.raise_for_status()
             with open(tmp_path, "wb") as out:
                 for chunk in r.iter_content(chunk_size=1024 * 1024):
                     if chunk:
+                        downloaded_size += len(chunk)
+                        if downloaded_size > max_size:
+                            raise RuntimeError(f"Audio file too large ({downloaded_size} bytes), exceeds Whisper limit (20MB)")
                         out.write(chunk)
+        
+        print(f"  ✅ Audio downloaded ({downloaded_size} bytes)")
 
         # Use provided API key or fall back to environment variable
         api_key_to_use = api_key or os.getenv("OPENAI_API_KEY")
         if not api_key_to_use:
             raise RuntimeError("OpenAI API key not provided")
+        
+        print(f"  🎤 Transcribing with Whisper...")
         client = OpenAI(api_key=api_key_to_use)
         with open(tmp_path, "rb") as f:
             result = client.audio.transcriptions.create(model="whisper-1", file=f)
+        
+        print(f"  ✅ Transcription completed")
         return getattr(result, "text", "") or ""
+    except Exception as e:
+        print(f"  ❌ Whisper transcription failed: {e}")
+        raise
     finally:
         try:
             if os.path.exists(tmp_path):
