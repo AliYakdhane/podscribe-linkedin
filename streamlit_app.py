@@ -861,14 +861,30 @@ with cols[0]:
         transcript_options = []
         for transcript in transcripts:
             episode_title = transcript.get('title', 'Unknown Episode')
+            # Try different date fields
             created_at = transcript.get('created_at', '')
-            if created_at:
+            published_at = transcript.get('published_at', '')
+            
+            # Use published_at if available, otherwise created_at
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
                 try:
                     from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    # Handle different date formats
+                    if 'T' in date_to_use:
+                        # ISO format with T
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        # Try parsing as regular date
+                        dt = datetime.fromisoformat(date_to_use)
                     date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    date_str = created_at
+                except Exception as e:
+                    print(f"Date parsing error: {e}, raw date: {date_to_use}")
+                    date_str = date_to_use or 'Unknown date'
             else:
                 date_str = 'Unknown date'
             
@@ -880,15 +896,30 @@ with cols[0]:
             selected_transcript = transcripts[selected_idx]
             episode_title = selected_transcript.get('title', 'Unknown Episode')
             transcript_content = selected_transcript.get('transcript_content', 'No content available')
+            # Try different date fields
             created_at = selected_transcript.get('created_at', '')
+            published_at = selected_transcript.get('published_at', '')
             
-            if created_at:
+            # Use published_at if available, otherwise created_at
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
                 try:
                     from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    # Handle different date formats
+                    if 'T' in date_to_use:
+                        # ISO format with T
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        # Try parsing as regular date
+                        dt = datetime.fromisoformat(date_to_use)
                     date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    date_str = created_at
+                except Exception as e:
+                    print(f"Date parsing error: {e}, raw date: {date_to_use}")
+                    date_str = date_to_use or 'Unknown date'
             else:
                 date_str = 'Unknown date'
             
