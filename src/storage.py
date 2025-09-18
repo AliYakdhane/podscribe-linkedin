@@ -123,6 +123,14 @@ def store_transcript(client, table: str, guid: str, title: str, published_at: Op
         print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
         print(f"  📤 Supabase: Content length: {len(content)} characters")
         
+        # Check if content is too large (Supabase limit is ~26MB)
+        MAX_CONTENT_SIZE = 25_000_000  # 25MB to be safe
+        if len(content.encode('utf-8')) > MAX_CONTENT_SIZE:
+            print(f"  ⚠️ Supabase: Content too large ({len(content.encode('utf-8'))} bytes), truncating to {MAX_CONTENT_SIZE} bytes")
+            # Truncate content to fit within limits
+            content = content[:MAX_CONTENT_SIZE]
+            print(f"  📤 Supabase: Truncated content length: {len(content)} characters")
+        
         row = {
             "guid": guid,
             "title": title,
@@ -157,6 +165,14 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
         print(f"  📤 Supabase: GUID: {guid}")
         print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
         print(f"  📤 Supabase: Content length: {len(content)} characters")
+        
+        # Check if content is too large (Supabase limit is ~26MB)
+        MAX_CONTENT_SIZE = 25_000_000  # 25MB to be safe
+        if len(content.encode('utf-8')) > MAX_CONTENT_SIZE:
+            print(f"  ⚠️ Supabase: Content too large ({len(content.encode('utf-8'))} bytes), truncating to {MAX_CONTENT_SIZE} bytes")
+            # Truncate content to fit within limits
+            content = content[:MAX_CONTENT_SIZE]
+            print(f"  📤 Supabase: Truncated content length: {len(content)} characters")
         
         row = {
             "guid": guid,
