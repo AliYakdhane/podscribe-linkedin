@@ -859,7 +859,7 @@ with cols[0]:
                 <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.code(transcript_content[:5000], language="text")
+            st.code(transcript_content, language="text")
 
 # Right: posts list
 with cols[1]:
@@ -923,7 +923,7 @@ with cols[1]:
                             <h4 style="margin: 0 0 0.5rem 0; color: #c4b5fd; font-weight: 600; font-size: 0.9rem;">Post {i}</h4>
                         </div>
                         """, unsafe_allow_html=True)
-                        st.markdown(post.strip()[:1000] + "..." if len(post.strip()) > 1000 else post.strip())
+                        st.markdown(post.strip())
                         if i < len(posts_list):
                             st.markdown("---")
             else:
