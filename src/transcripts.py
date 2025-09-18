@@ -68,17 +68,70 @@ def _fetch_text_from_url(url: str) -> str:
     return content
 
 
+def _split_audio_file(input_path: str, chunk_duration_minutes: int = 15) -> list[str]:
+    """Split audio file into chunks using ffmpeg. Returns list of chunk file paths."""
+    try:
+        import subprocess
+    except ImportError:
+        raise RuntimeError("ffmpeg not available for audio splitting")
+    
+    tmp_dir = os.path.dirname(input_path)
+    base_name = os.path.splitext(os.path.basename(input_path))[0]
+    chunk_paths = []
+    
+    # Get audio duration first
+    try:
+        result = subprocess.run([
+            'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+            '-of', 'csv=p=0', input_path
+        ], capture_output=True, text=True, timeout=30)
+        duration = float(result.stdout.strip())
+        print(f"  📊 Audio duration: {duration/60:.1f} minutes")
+    except Exception as e:
+        print(f"  ⚠️ Could not get audio duration: {e}")
+        duration = 0
+    
+    if duration <= chunk_duration_minutes * 60:
+        # File is small enough, return original
+        return [input_path]
+    
+    chunk_count = int(duration / (chunk_duration_minutes * 60)) + 1
+    print(f"  ✂️ Splitting into {chunk_count} chunks of {chunk_duration_minutes} minutes each")
+    
+    for i in range(chunk_count):
+        start_time = i * chunk_duration_minutes * 60
+        chunk_path = os.path.join(tmp_dir, f"{base_name}_chunk_{i+1}.mp3")
+        
+        try:
+            subprocess.run([
+                'ffmpeg', '-i', input_path, '-ss', str(start_time),
+                '-t', str(chunk_duration_minutes * 60), '-c', 'copy',
+                '-y', chunk_path
+            ], capture_output=True, timeout=60)
+            
+            if os.path.exists(chunk_path) and os.path.getsize(chunk_path) > 0:
+                chunk_paths.append(chunk_path)
+                print(f"  ✅ Created chunk {i+1}: {os.path.getsize(chunk_path)/1024/1024:.1f}MB")
+            else:
+                print(f"  ⚠️ Chunk {i+1} is empty or failed")
+        except Exception as e:
+            print(f"  ❌ Failed to create chunk {i+1}: {e}")
+    
+    return chunk_paths
+
+
 def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None) -> str:
     # Whisper has a ~25MB file size limit. Check upfront when possible.
+    file_size = None
     try:
         head = requests.head(audio_url, timeout=30, allow_redirects=True)
         if head.ok:
             cl = head.headers.get("Content-Length")
-            if cl and cl.isdigit() and int(cl) > 20_000_000:  # 20MB to be safe
-                raise RuntimeError(f"Audio file too large ({int(cl)} bytes), exceeds Whisper limit (20MB)")
+            if cl and cl.isdigit():
+                file_size = int(cl)
+                print(f"  📏 Audio file size: {file_size/1024/1024:.1f}MB")
     except Exception as e:
         print(f"  ⚠️ Could not check audio file size: {e}")
-        # If HEAD fails, continue but be more cautious
 
     tmp_dir = tempfile.gettempdir()
     tmp_path = os.path.join(tmp_dir, f"podcast_{uuid4().hex}.mp3")
@@ -86,7 +139,6 @@ def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None)
     try:
         print(f"  📥 Downloading audio file...")
         downloaded_size = 0
-        max_size = 20_000_000  # 20MB limit
         
         with requests.get(audio_url, stream=True, timeout=120) as r:
             r.raise_for_status()
@@ -94,24 +146,68 @@ def transcribe_via_openai_whisper(audio_url: str, api_key: Optional[str] = None)
                 for chunk in r.iter_content(chunk_size=1024 * 1024):
                     if chunk:
                         downloaded_size += len(chunk)
-                        if downloaded_size > max_size:
-                            raise RuntimeError(f"Audio file too large ({downloaded_size} bytes), exceeds Whisper limit (20MB)")
                         out.write(chunk)
         
-        print(f"  ✅ Audio downloaded ({downloaded_size} bytes)")
+        print(f"  ✅ Audio downloaded ({downloaded_size/1024/1024:.1f}MB)")
 
         # Use provided API key or fall back to environment variable
         api_key_to_use = api_key or os.getenv("OPENAI_API_KEY")
         if not api_key_to_use:
             raise RuntimeError("OpenAI API key not provided")
         
-        print(f"  🎤 Transcribing with Whisper...")
         client = OpenAI(api_key=api_key_to_use)
-        with open(tmp_path, "rb") as f:
-            result = client.audio.transcriptions.create(model="whisper-1", file=f)
         
-        print(f"  ✅ Transcription completed")
-        return getattr(result, "text", "") or ""
+        # Check if file is too large for single transcription
+        if downloaded_size > 20_000_000:  # 20MB limit
+            print(f"  🔄 File too large ({downloaded_size/1024/1024:.1f}MB), splitting into chunks...")
+            
+            # Split audio file
+            chunk_paths = _split_audio_file(tmp_path, chunk_duration_minutes=15)
+            
+            if not chunk_paths:
+                raise RuntimeError("Failed to create audio chunks")
+            
+            # Transcribe each chunk
+            all_transcripts = []
+            for i, chunk_path in enumerate(chunk_paths):
+                print(f"  🎤 Transcribing chunk {i+1}/{len(chunk_paths)}...")
+                try:
+                    with open(chunk_path, "rb") as f:
+                        result = client.audio.transcriptions.create(model="whisper-1", file=f)
+                    chunk_text = getattr(result, "text", "") or ""
+                    if chunk_text.strip():
+                        all_transcripts.append(chunk_text.strip())
+                        print(f"  ✅ Chunk {i+1} transcribed ({len(chunk_text)} chars)")
+                    else:
+                        print(f"  ⚠️ Chunk {i+1} produced empty transcript")
+                except Exception as e:
+                    print(f"  ❌ Failed to transcribe chunk {i+1}: {e}")
+                    continue
+            
+            # Clean up chunk files
+            for chunk_path in chunk_paths:
+                try:
+                    if os.path.exists(chunk_path):
+                        os.remove(chunk_path)
+                except Exception:
+                    pass
+            
+            if all_transcripts:
+                combined_transcript = " ".join(all_transcripts)
+                print(f"  ✅ Combined transcription completed ({len(combined_transcript)} chars)")
+                return combined_transcript
+            else:
+                raise RuntimeError("All audio chunks failed transcription")
+        
+        else:
+            # File is small enough for single transcription
+            print(f"  🎤 Transcribing with Whisper...")
+            with open(tmp_path, "rb") as f:
+                result = client.audio.transcriptions.create(model="whisper-1", file=f)
+            
+            print(f"  ✅ Transcription completed")
+            return getattr(result, "text", "") or ""
+            
     except Exception as e:
         print(f"  ❌ Whisper transcription failed: {e}")
         raise
