@@ -901,11 +901,15 @@ with cols[0]:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                col1, col2 = st.columns([1, 4])
+                col1, col2, col3 = st.columns([1, 1, 3])
                 with col1:
                     if st.button("See More", key=f"expand_{selected_idx}", type="secondary"):
                         st.session_state[transcript_key] = True
                         st.rerun()
+                with col2:
+                    if st.button("📋 Copy", key=f"copy_preview_{selected_idx}", type="secondary"):
+                        st.code(preview_content, language="text")
+                        st.success("Preview copied! Use Ctrl+A and Ctrl+C to copy the text above.")
             else:
                 st.markdown(f"""
                 <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
@@ -916,11 +920,22 @@ with cols[0]:
                 """, unsafe_allow_html=True)
                 
                 if len(formatted_content) > 1000:
-                    col1, col2 = st.columns([1, 4])
+                    col1, col2, col3 = st.columns([1, 1, 3])
                     with col1:
                         if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary"):
                             st.session_state[transcript_key] = False
                             st.rerun()
+                    with col2:
+                        if st.button("📋 Copy", key=f"copy_full_{selected_idx}", type="secondary"):
+                            st.code(formatted_content, language="text")
+                            st.success("Full transcript copied! Use Ctrl+A and Ctrl+C to copy the text above.")
+                else:
+                    # For short content, just show copy button
+                    col1, col2 = st.columns([1, 4])
+                    with col1:
+                        if st.button("📋 Copy", key=f"copy_short_{selected_idx}", type="secondary"):
+                            st.code(formatted_content, language="text")
+                            st.success("Transcript copied! Use Ctrl+A and Ctrl+C to copy the text above.")
 
 # Right: posts list
 with cols[1]:
