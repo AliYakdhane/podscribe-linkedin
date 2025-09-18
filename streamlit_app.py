@@ -309,24 +309,6 @@ st.markdown("""
         color: #2563eb !important;
     }
     
-    /* Copy button styling */
-    .stButton > button[title="Copy transcript text"] {
-        background: #374151 !important;
-        border: 1px solid #4b5563 !important;
-        color: #f3f4f6 !important;
-        text-decoration: none !important;
-        font-size: 0.85rem !important;
-        padding: 0.4rem 0.8rem !important;
-        border-radius: 6px !important;
-        min-width: auto !important;
-        width: auto !important;
-    }
-    
-    .stButton > button[title="Copy transcript text"]:hover {
-        background: #4b5563 !important;
-        border-color: #6b7280 !important;
-        color: #ffffff !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -921,31 +903,6 @@ with cols[0]:
             </div>
             """, unsafe_allow_html=True)
             
-            # Add direct copy button with JavaScript
-            col1, col2 = st.columns([1, 10])
-            with col1:
-                # Create a hidden textarea with the transcript content
-                transcript_id = f"transcript_{selected_idx}"
-                st.markdown(f"""
-                <textarea id="{transcript_id}" style="display: none;">{transcript_content}</textarea>
-                <button onclick="copyToClipboard('{transcript_id}')" 
-                        style="background: #374151; border: 1px solid #4b5563; color: #f3f4f6; 
-                               padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; 
-                               font-size: 0.85rem;" 
-                        onmouseover="this.style.background='#4b5563'" 
-                        onmouseout="this.style.background='#374151'">
-                    📋 Copy
-                </button>
-                <script>
-                function copyToClipboard(elementId) {{
-                    var textArea = document.getElementById(elementId);
-                    textArea.select();
-                    textArea.setSelectionRange(0, 99999); // For mobile devices
-                    document.execCommand('copy');
-                    alert('Transcript copied to clipboard!');
-                }}
-                </script>
-                """, unsafe_allow_html=True)
             
             # Create a unique key for this transcript's expand/collapse state
             transcript_key = f"transcript_expanded_{selected_idx}"
