@@ -115,6 +115,48 @@ def ensure_tables_exist(client) -> None:
         print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
 
 
+def _chunk_content(content: str, max_size: int = 20_000_000) -> list[str]:
+    """Split content into chunks that fit within size limits."""
+    if len(content.encode('utf-8')) <= max_size:
+        return [content]
+    
+    chunks = []
+    current_chunk = ""
+    
+    # Split by sentences to avoid breaking mid-word
+    sentences = content.split('. ')
+    
+    for sentence in sentences:
+        test_chunk = current_chunk + sentence + '. '
+        
+        if len(test_chunk.encode('utf-8')) > max_size:
+            if current_chunk:
+                chunks.append(current_chunk.rstrip())
+                current_chunk = sentence + '. '
+            else:
+                # Single sentence is too large, split by words
+                words = sentence.split(' ')
+                for word in words:
+                    test_word = current_chunk + word + ' '
+                    if len(test_word.encode('utf-8')) > max_size:
+                        if current_chunk:
+                            chunks.append(current_chunk.rstrip())
+                            current_chunk = word + ' '
+                        else:
+                            # Single word is too large, force split
+                            chunks.append(word[:max_size//2])
+                            current_chunk = word[max_size//2:] + ' '
+                    else:
+                        current_chunk = test_word
+        else:
+            current_chunk = test_chunk
+    
+    if current_chunk:
+        chunks.append(current_chunk.rstrip())
+    
+    return chunks
+
+
 def store_transcript(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
     """Store transcript content directly in Supabase table. Returns True on success."""
     try:
@@ -123,33 +165,61 @@ def store_transcript(client, table: str, guid: str, title: str, published_at: Op
         print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
         print(f"  📤 Supabase: Content length: {len(content)} characters")
         
-        # Check if content is too large (Supabase limit is ~26MB)
-        MAX_CONTENT_SIZE = 25_000_000  # 25MB to be safe
-        if len(content.encode('utf-8')) > MAX_CONTENT_SIZE:
-            print(f"  ⚠️ Supabase: Content too large ({len(content.encode('utf-8'))} bytes), truncating to {MAX_CONTENT_SIZE} bytes")
-            # Truncate content to fit within limits
-            content = content[:MAX_CONTENT_SIZE]
-            print(f"  📤 Supabase: Truncated content length: {len(content)} characters")
+        # Check if content needs chunking
+        MAX_CONTENT_SIZE = 20_000_000  # 20MB to be safe
+        content_bytes = len(content.encode('utf-8'))
         
-        row = {
-            "guid": guid,
-            "title": title,
-            "published_at": published_at.isoformat() if published_at else None,
-            "transcript_content": content,
-        }
-        
-        print(f"  📤 Supabase: Sending upsert request to table '{table}'")
-        resp = client.table(table).upsert(row, on_conflict="guid").execute()
-        
-        print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
-        print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
-        
-        if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
-            print(f"  ✅ Supabase: Successfully stored transcript for '{title}'")
+        if content_bytes > MAX_CONTENT_SIZE:
+            print(f"  ⚠️ Supabase: Content too large ({content_bytes} bytes), splitting into chunks")
+            chunks = _chunk_content(content, MAX_CONTENT_SIZE)
+            print(f"  📤 Supabase: Split into {len(chunks)} chunks")
+            
+            # Store each chunk with a chunk identifier
+            for i, chunk in enumerate(chunks):
+                chunk_guid = f"{guid}_chunk_{i+1}"
+                row = {
+                    "guid": chunk_guid,
+                    "title": f"{title} (Part {i+1}/{len(chunks)})",
+                    "published_at": published_at.isoformat() if published_at else None,
+                    "transcript_content": chunk,
+                    "chunk_index": i + 1,
+                    "total_chunks": len(chunks),
+                    "original_guid": guid,
+                }
+                
+                print(f"  📤 Supabase: Storing chunk {i+1}/{len(chunks)} ({len(chunk)} chars)")
+                resp = client.table(table).upsert(row, on_conflict="guid").execute()
+                
+                if not (getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201)):
+                    print(f"  ❌ Supabase: Failed to store chunk {i+1}")
+                    return False
+            
+            print(f"  ✅ Supabase: Successfully stored {len(chunks)} chunks for '{title}'")
             return True
         else:
-            print(f"  ❌ Supabase: Failed to store transcript - invalid response")
-            return False
+            # Store as single record
+            row = {
+                "guid": guid,
+                "title": title,
+                "published_at": published_at.isoformat() if published_at else None,
+                "transcript_content": content,
+                "chunk_index": 1,
+                "total_chunks": 1,
+                "original_guid": guid,
+            }
+            
+            print(f"  📤 Supabase: Sending upsert request to table '{table}'")
+            resp = client.table(table).upsert(row, on_conflict="guid").execute()
+            
+            print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
+            print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
+            
+            if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
+                print(f"  ✅ Supabase: Successfully stored transcript for '{title}'")
+                return True
+            else:
+                print(f"  ❌ Supabase: Failed to store transcript - invalid response")
+                return False
     except Exception as ex:
         print(f"  ❌ Supabase transcript storage failed: {ex}")
         print(f"  ❌ Supabase: Error type: {type(ex).__name__}")

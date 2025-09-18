@@ -373,7 +373,7 @@ except Exception as e:
     st.warning("Some features may not work. Check the error above.")
 
 def load_transcripts_from_supabase():
-    """Load transcripts from Supabase"""
+    """Load transcripts from Supabase and reassemble chunked content"""
     try:
         from src.storage import build_supabase_client
         
@@ -392,10 +392,49 @@ def load_transcripts_from_supabase():
         # Load transcripts from Supabase
         result = supabase_client.table("podcast_transcripts").select("*").order("created_at", desc=True).execute()
         
-        if result.data:
-            return result.data
-        else:
+        if not result.data:
             return []
+        
+        # Group chunks by original_guid and reassemble
+        transcripts_by_guid = {}
+        for record in result.data:
+            original_guid = record.get('original_guid', record.get('guid'))
+            
+            if original_guid not in transcripts_by_guid:
+                transcripts_by_guid[original_guid] = {
+                    'guid': original_guid,
+                    'title': record.get('title', '').replace(' (Part 1/1)', '').replace(' (Part 1/2)', '').replace(' (Part 2/2)', ''),
+                    'published_at': record.get('published_at'),
+                    'transcript_content': '',
+                    'chunks': []
+                }
+            
+            # Store chunk info
+            chunk_index = record.get('chunk_index', 1)
+            total_chunks = record.get('total_chunks', 1)
+            chunk_content = record.get('transcript_content', '')
+            
+            transcripts_by_guid[original_guid]['chunks'].append({
+                'index': chunk_index,
+                'total': total_chunks,
+                'content': chunk_content
+            })
+        
+        # Reassemble chunks in correct order
+        reassembled_transcripts = []
+        for original_guid, transcript_data in transcripts_by_guid.items():
+            chunks = transcript_data['chunks']
+            chunks.sort(key=lambda x: x['index'])  # Sort by chunk index
+            
+            # Reassemble content
+            full_content = ' '.join([chunk['content'] for chunk in chunks])
+            transcript_data['transcript_content'] = full_content
+            
+            # Remove chunks info for display
+            del transcript_data['chunks']
+            reassembled_transcripts.append(transcript_data)
+        
+        return reassembled_transcripts
             
     except Exception as e:
         st.error(f"❌ Error loading transcripts from Supabase: {e}")
