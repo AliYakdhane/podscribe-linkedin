@@ -880,7 +880,47 @@ with cols[0]:
                 <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.code(transcript_content, language="text")
+            
+            # Create a unique key for this transcript's expand/collapse state
+            transcript_key = f"transcript_expanded_{i}"
+            
+            # Check if transcript is expanded
+            is_expanded = st.session_state.get(transcript_key, False)
+            
+            # Format transcript content with proper paragraphs
+            formatted_content = transcript_content.replace('\n\n', '\n\n').replace('\n', ' ')
+            
+            # Show preview or full content
+            if len(formatted_content) > 1000 and not is_expanded:
+                preview_content = formatted_content[:1000] + "..."
+                st.markdown(f"""
+                <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
+                           border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
+                           white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
+                {preview_content}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col1, col2 = st.columns([1, 4])
+                with col1:
+                    if st.button("See More", key=f"expand_{i}", type="secondary"):
+                        st.session_state[transcript_key] = True
+                        st.rerun()
+            else:
+                st.markdown(f"""
+                <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
+                           border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
+                           white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
+                {formatted_content}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if len(formatted_content) > 1000:
+                    col1, col2 = st.columns([1, 4])
+                    with col1:
+                        if st.button("See Less", key=f"collapse_{i}", type="secondary"):
+                            st.session_state[transcript_key] = False
+                            st.rerun()
 
 # Right: posts list
 with cols[1]:
