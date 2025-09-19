@@ -318,6 +318,145 @@ st.markdown("""
     p, span, div, label, input, textarea, select {
         color: #1e293b !important;
     }
+    
+    /* Fix select box styling for production */
+    .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    .stSelectbox > div > div > div {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Select box dropdown options */
+    .stSelectbox .stSelectbox-options {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .stSelectbox .stSelectbox-option {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        padding: 8px 12px !important;
+    }
+    
+    .stSelectbox .stSelectbox-option:hover {
+        background-color: #f3f4f6 !important;
+        color: #1e293b !important;
+    }
+    
+    /* Placeholder text styling */
+    .stSelectbox input::placeholder,
+    .stSelectbox input::-webkit-input-placeholder,
+    .stSelectbox input::-moz-placeholder,
+    .stSelectbox input:-ms-input-placeholder {
+        color: #6b7280 !important;
+        opacity: 1 !important;
+    }
+    
+    /* Select box text input */
+    .stSelectbox input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    /* Multi-select styling */
+    .stMultiSelect > div > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    .stMultiSelect > div > div > div {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Text input styling */
+    .stTextInput > div > div > input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: #6b7280 !important;
+        opacity: 1 !important;
+    }
+    
+    /* Text area styling */
+    .stTextArea > div > div > textarea {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    .stTextArea > div > div > textarea::placeholder {
+        color: #6b7280 !important;
+        opacity: 1 !important;
+    }
+    
+    /* Number input styling */
+    .stNumberInput > div > div > input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    /* Date input styling */
+    .stDateInput > div > div > input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    /* Time input styling */
+    .stTimeInput > div > div > input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    /* Checkbox styling */
+    .stCheckbox > div > div {
+        background-color: #ffffff !important;
+    }
+    
+    /* Radio button styling */
+    .stRadio > div > div {
+        background-color: #ffffff !important;
+    }
+    
+    /* Slider styling */
+    .stSlider > div > div > div {
+        background-color: #ffffff !important;
+    }
+    
+    /* File uploader styling */
+    .stFileUploader > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        background-color: #3b82f6 !important;
+        color: #ffffff !important;
+        border: 1px solid #3b82f6 !important;
+        border-radius: 6px !important;
+    }
+    
+    .stButton > button:hover {
+        background-color: #2563eb !important;
+        border-color: #2563eb !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
