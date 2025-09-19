@@ -28,6 +28,14 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = "5ca659c9fa66d91be324e790e225f488e0dca8e954b770afdb2691f553d9ccf6"  # "password" hashed with SHA-256
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
 
+# Set page config first - must be before any other Streamlit commands
+st.set_page_config(
+    page_title="Podcast AI Studio", 
+    page_icon="🎙️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # Apply global CSS immediately for consistent theming across entire app
 st.markdown("""
 <style>
@@ -329,197 +337,414 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 # Old login_form and logout functions removed - now using Supabase-based session manager
 
-# Set page config first
-st.set_page_config(
-    page_title="Podcast AI Studio", 
-    page_icon="🎙️",
-    layout="wide",
-    initial_sidebar_state="expanded"
+# Main authentication check
+# Check authentication using new session manager or fallback
+if USE_SUPABASE_SESSIONS:
+    # Use new Supabase-based session management
+    initialize_session()
+    
+    if not is_authenticated():
+        # Try to restore session from localStorage
+        st.markdown("""
+        <script>
+        // Try to restore session from localStorage
+        const savedSessionId = localStorage.getItem('podcast_session_id');
+        if (savedSessionId && !window.sessionRestored) {
+            window.sessionRestored = true;
+            // Redirect with session_id to restore session
+            const url = new URL(window.location);
+            url.searchParams.set('session_id', savedSessionId);
+            window.location.href = url.toString();
+        }
+        </script>
+        """, unsafe_allow_html=True)
+        
+        login_form()
+        st.stop()
+else:
+    # Fallback to old session management
+    if not is_authenticated():
+        login_form()
+        st.stop()
+
+# User is authenticated - continue with main app
+
+# Top Navigation Bar with Logout
+st.markdown("""
+<div class="top-nav">
+    <div class="nav-title">🎙️ Podcast AI Studio</div>
+    <div class="nav-logout-container">
+        <button class="nav-logout" onclick="logoutFunction()">🚪 Logout</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Main Content
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+
+# Initialize session state
+if "last_run_output" not in st.session_state:
+    st.session_state["last_run_output"] = ""
+if "last_run_success" not in st.session_state:
+    st.session_state["last_run_success"] = False
+if "last_run_time" not in st.session_state:
+    st.session_state["last_run_time"] = ""
+
+# Load data from Supabase
+transcripts = load_transcripts_from_supabase()
+posts = load_posts_from_supabase()
+
+# Status Dashboard
+st.markdown("""
+<div class="status-dashboard">
+    <div class="status-card">
+        <div class="status-title">☁️ Cloud Storage</div>
+        <div class="status-value">Connected</div>
+    </div>
+    <div class="status-card">
+        <div class="status-title">📝 Transcripts</div>
+        <div class="status-value">{}</div>
+    </div>
+    <div class="status-card">
+        <div class="status-title">📱 LinkedIn Posts</div>
+        <div class="status-value">{}</div>
+    </div>
+</div>
+""".format(len(transcripts), len(posts)), unsafe_allow_html=True)
+
+# Content Generation Section
+st.markdown('<h4 class="section-title">🎯 Content Generation</h4>', unsafe_allow_html=True)
+
+# Voice and tone input
+st.markdown('<div class="generation-form">', unsafe_allow_html=True)
+st.markdown('<div class="form-title">Voice & Tone</div>', unsafe_allow_html=True)
+custom_voice = st.text_area(
+    "Describe your desired voice and tone for content generation:",
+    placeholder="e.g., Professional, friendly, authoritative, conversational...",
+    key="custom_voice_global"
 )
 
-# Professional CSS styling
+# Additional instructions
+st.markdown('<div class="form-title">Additional Instructions</div>', unsafe_allow_html=True)
+custom_instructions = st.text_area(
+    "Any specific instructions for content generation:",
+    placeholder="e.g., Focus on key takeaways, include call-to-action, use specific examples...",
+    key="custom_instructions_global"
+)
+
+# Transcript selector
+st.markdown('<div class="form-title">Select Transcript</div>', unsafe_allow_html=True)
+if transcripts:
+    transcript_options = [f"{t['title']} - {t.get('published_at', t.get('created_at', 'Unknown date'))}" for t in transcripts]
+    selected_transcript_idx = st.selectbox(
+        "Select transcript to generate content from:",
+        range(len(transcript_options)),
+        format_func=lambda x: transcript_options[x],
+        key="transcript_selector_global"
+    )
+else:
+    st.info("No transcripts available. Pull some episodes first!")
+    selected_transcript_idx = None
+
+# Generate content buttons
+st.markdown('<div class="form-actions">', unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    generate_linkedin = st.button("📱 Generate LinkedIn Posts", key="generate_linkedin_global")
+
+with col2:
+    generate_blog = st.button("📝 Generate Blog Post", key="generate_blog_global")
+
+with col3:
+    generate_both = st.button("🚀 Generate Both", key="generate_both_global")
+
+st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)  # Close generation-form
+
+# Content generation logic
+if selected_transcript_idx is not None and (generate_linkedin or generate_blog or generate_both):
+    if not custom_voice.strip():
+        st.error("Please enter your desired voice and tone before generating content.")
+    else:
+        selected_transcript = transcripts[selected_transcript_idx]
+        transcript_content = selected_transcript['transcript_content']
+        
+        # Check if OpenAI key is available
+        openai_key = st.secrets.get("OPENAI_API_KEY")
+        if not openai_key:
+            st.error("OpenAI API key not found in secrets. Please configure it first.")
+        else:
+            try:
+                from src.content_generator import ContentGenerator
+                generator = ContentGenerator(openai_key)
+                
+                if generate_linkedin or generate_both:
+                    with st.spinner("Generating LinkedIn posts..."):
+                        linkedin_posts = generator.generate_linkedin_posts_custom(
+                            transcript_content, custom_voice, custom_instructions
+                        )
+                        
+                        # Store LinkedIn posts in Supabase
+                        from src.storage import store_posts, build_supabase_client
+                        supabase_url = st.secrets.get("SUPABASE_URL")
+                        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+                        supabase_client = build_supabase_client(supabase_url, supabase_key)
+                        
+                        if supabase_client:
+                            posts_content = "---POST_BREAK---".join(linkedin_posts)
+                            store_posts(
+                                supabase_client,
+                                "podcast_posts",
+                                selected_transcript['guid'],
+                                selected_transcript['title'],
+                                selected_transcript.get('published_at', ''),
+                                posts_content,
+                                "linkedin"
+                            )
+                            st.success("LinkedIn posts generated and saved!")
+                        else:
+                            st.error("Could not connect to Supabase to save posts.")
+                
+                if generate_blog or generate_both:
+                    with st.spinner("Generating blog post..."):
+                        blog_post = generator.generate_blog_post_custom(
+                            transcript_content, custom_voice, custom_instructions
+                        )
+                        
+                        # Store blog post in Supabase
+                        from src.storage import store_posts, build_supabase_client
+                        supabase_url = st.secrets.get("SUPABASE_URL")
+                        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+                        supabase_client = build_supabase_client(supabase_url, supabase_key)
+                        
+                        if supabase_client:
+                            store_posts(
+                                supabase_client,
+                                "podcast_posts",
+                                selected_transcript['guid'],
+                                selected_transcript['title'],
+                                selected_transcript.get('published_at', ''),
+                                blog_post['content'],
+                                "blog"
+                            )
+                            st.success("Blog post generated and saved!")
+                        else:
+                            st.error("Could not connect to Supabase to save posts.")
+                
+                st.rerun()  # Refresh the page to show new content
+                
+            except Exception as e:
+                st.error(f"Error generating content: {e}")
+                st.code(traceback.format_exc())
+
+# Content Library
+st.markdown('<h4 class="section-title">📚 Content Library</h4>', unsafe_allow_html=True)
+
+# Two column layout for transcripts and generated content
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown('<h5 class="form-title">📝 Transcripts</h5>', unsafe_allow_html=True)
+    
+    if transcripts:
+        for i, transcript in enumerate(transcripts):
+            # Parse date
+            created_at = transcript.get('created_at', '')
+            published_at = transcript.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as e:
+                    date_str = date_to_use or 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            # Display transcript
+            st.markdown(f"""
+            <div class="content-display">
+                <div class="content-title">{transcript['title']}</div>
+                <div class="content-meta">Saved: {date_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Show transcript content with expand/collapse
+            transcript_content = transcript['transcript_content']
+            content_key = f"transcript_expanded_{i}"
+            
+            if content_key not in st.session_state:
+                st.session_state[content_key] = False
+            
+            # Show preview or full content
+            if len(transcript_content) > 1000:
+                if not st.session_state[content_key]:
+                    preview = transcript_content[:1000] + "..."
+                    st.markdown(f'<div class="content-text">{preview}</div>', unsafe_allow_html=True)
+                    if st.button(f"See More", key=f"expand_{i}"):
+                        st.session_state[content_key] = True
+                        st.rerun()
+                else:
+                    st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+                    if st.button(f"See Less", key=f"collapse_{i}"):
+                        st.session_state[content_key] = False
+                        st.rerun()
+            else:
+                st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+    else:
+        st.info("No transcripts available. Pull some episodes first!")
+
+with col2:
+    st.markdown('<h5 class="form-title">📱 LinkedIn Posts</h5>', unsafe_allow_html=True)
+    
+    linkedin_posts = [p for p in posts if p.get('post_type') == 'linkedin']
+    
+    if linkedin_posts:
+        for i, post in enumerate(linkedin_posts):
+            # Parse date
+            created_at = post.get('created_at', '')
+            published_at = post.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as e:
+                    date_str = date_to_use or 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            # Display post
+            st.markdown(f"""
+            <div class="content-display">
+                <div class="content-title">{post['title']}</div>
+                <div class="content-meta">Saved: {date_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Parse and display LinkedIn posts
+            posts_content = post['posts_content']
+            
+            # Try to split by POST_BREAK first, then fallback to ---
+            if '---POST_BREAK---' in posts_content:
+                individual_posts = posts_content.split('---POST_BREAK---')
+            else:
+                individual_posts = posts_content.split('---')
+            
+            for j, individual_post in enumerate(individual_posts):
+                if individual_post.strip():
+                    st.markdown(f'<div class="content-text">{individual_post.strip()}</div>', unsafe_allow_html=True)
+                    if j < len(individual_posts) - 1:
+                        st.markdown('---')
+    else:
+        st.info("No LinkedIn posts available. Generate some content first!")
+
+# Blog Posts Section
+st.markdown('<h5 class="form-title">📝 Blog Posts</h5>', unsafe_allow_html=True)
+
+blog_posts = [p for p in posts if p.get('post_type') == 'blog']
+
+if blog_posts:
+    for i, post in enumerate(blog_posts):
+        # Parse date
+        created_at = post.get('created_at', '')
+        published_at = post.get('published_at', '')
+        date_to_use = published_at or created_at
+        
+        if date_to_use:
+            try:
+                from datetime import datetime
+                if 'T' in date_to_use:
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                else:
+                    dt = datetime.fromisoformat(date_to_use)
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                date_str = date_to_use or 'Unknown date'
+        else:
+            date_str = 'Unknown date'
+        
+        # Display post
+        st.markdown(f"""
+        <div class="content-display">
+            <div class="content-title">{post['title']}</div>
+            <div class="content-meta">Saved: {date_str}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display blog content
+        blog_content = post['posts_content']
+        st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+else:
+    st.info("No blog posts available. Generate some content first!")
+
+# Close main content div
+st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
+
+# Logout functionality
+if st.query_params.get("logout_trigger"):
+    # Clear session state
+    for key in ["authenticated", "login_time", "username", "session_id"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    
+    # Remove session file
+    try:
+        Path("session_data.json").unlink(missing_ok=True)
+    except Exception:
+        pass
+    
+    # Clear query params and rerun
+    st.query_params.clear()
+    st.rerun()
+
+# JavaScript for logout function
 st.markdown("""
-<style>
-    /* Global Styles - Remove all default Streamlit padding */
-    .main {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
+<script>
+function logoutFunction() {
+    // Create a hidden form to submit logout trigger
+    const form = document.createElement('form');
+    form.method = 'GET';
+    form.action = window.location.href;
     
-    /* Remove Streamlit's default spacing */
-    .stApp > header {
-        visibility: hidden;
-    }
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'logout_trigger';
+    input.value = 'true';
     
-    .stApp {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Hide Streamlit's default header */
-    .stApp > div:first-child {
-        display: none;
-    }
-    
-    /* Reduce spacing between elements */
-    .element-container {
-        margin-bottom: 0 !important;
-    }
-    
-    /* Reduce spacing in main content */
-    .main .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-    }
-    
-    /* Header Styles */
-    .main-header {
-        background: #4f46e5;
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-    }
-    
-    /* Metric Cards */
-    .metric-card {
-        background: #374151;
-        padding: 0.5rem;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        border: 1px solid #4b5563;
-        margin-bottom: 0.25rem;
-        transition: all 0.2s ease;
-        position: relative;
-        overflow: hidden;
-        height: 40px;
-        display: flex;
-        align-items: center;
-    }
-    
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: #4f46e5;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        border-color: #4f46e5;
-        background: #4b5563;
-    }
-    
-    /* Section Headers */
-    .section-header {
-        color: #2d3748;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e2e8f0;
-    }
-    
-    /* Content Cards */
-    .content-card {
-        background: #374151;
-        padding: 0.75rem;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        border: 1px solid #4b5563;
-        margin-bottom: 0.5rem;
-        transition: all 0.2s ease;
-    }
-    
-    .content-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        border-color: #4f46e5;
-        background: #4b5563;
-    }
-    
-    /* Sidebar Styling */
-    .sidebar .sidebar-content {
-        background: #f8fafc;
-        padding: 1rem;
-    }
-    
-    .sidebar-header {
-        background: #4f46e5;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
-    }
-    
-    /* Button Styles */
-    .stButton > button {
-        background: #4f46e5;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
-    }
-    
-    .stButton > button:hover {
-        background: #4338ca;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-    }
-    
-    /* Input Styles */
-    .stTextInput > div > div > input {
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        padding: 0.75rem 1rem;
-        font-size: 0.95rem;
-        transition: all 0.3s ease;
-    }
-    
-    .stTextInput > div > div > input:focus {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        outline: none;
-    }
-    
-    /* Selectbox Styles */
-    .stSelectbox > div > div {
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        transition: all 0.3s ease;
-    }
-    
-    .stSelectbox > div > div:focus-within {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-    }
-    
-    /* Status Indicators */
-    .status-success {
-        background: #10b981;
-        color: white;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-    }
-    
-    .status-warning {
-        background: #f59e0b;
-        color: white;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+""", unsafe_allow_html=True)
+
+# Footer
+st.markdown("""
+<div style="text-align: center; padding: 2rem; color: #6b7280; font-size: 0.9rem;">
+    🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
+</div>
+""", unsafe_allow_html=True)
         margin: 0.5rem 0;
         box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
     }
