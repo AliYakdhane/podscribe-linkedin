@@ -228,12 +228,13 @@ def store_transcript(client, table: str, guid: str, title: str, published_at: Op
     return False
 
 
-def store_posts(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str) -> bool:
+def store_posts(client, table: str, guid: str, title: str, published_at: Optional[datetime], content: str, post_type: str = "linkedin") -> bool:
     """Store posts content directly in Supabase table. Returns True on success."""
     try:
         print(f"  📤 Supabase: Preparing to store posts for '{title}'")
         print(f"  📤 Supabase: GUID: {guid}")
         print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
+        print(f"  📤 Supabase: Post Type: {post_type}")
         print(f"  📤 Supabase: Content length: {len(content)} characters")
         
         # Check if content is too large (Supabase limit is ~26MB)
@@ -249,6 +250,7 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
             "title": title,
             "published_at": published_at.isoformat() if published_at else None,
             "posts_content": content,
+            "post_type": post_type,
         }
         
         print(f"  📤 Supabase: Sending upsert request to table '{table}'")
