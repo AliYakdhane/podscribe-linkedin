@@ -233,7 +233,7 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
     try:
         print(f"  📤 Supabase: Preparing to store posts for '{title}'")
         print(f"  📤 Supabase: GUID: {guid}")
-        print(f"  📤 Supabase: Published: {published_at.isoformat() if published_at else 'None'}")
+        print(f"  📤 Supabase: Published: {published_at if published_at else 'None'}")
         print(f"  📤 Supabase: Post Type: {post_type}")
         print(f"  📤 Supabase: Content length: {len(content)} characters")
         
@@ -245,10 +245,19 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
             content = content[:MAX_CONTENT_SIZE]
             print(f"  📤 Supabase: Truncated content length: {len(content)} characters")
         
+        # Handle published_at - it might be a string or datetime object
+        if published_at:
+            if isinstance(published_at, str):
+                published_at_value = published_at
+            else:
+                published_at_value = published_at.isoformat()
+        else:
+            published_at_value = None
+            
         row = {
             "guid": guid,
             "title": title,
-            "published_at": published_at.isoformat() if published_at else None,
+            "published_at": published_at_value,
             "posts_content": content,
             "post_type": post_type,
         }
