@@ -770,16 +770,42 @@ def load_transcripts_from_supabase():
         return []
 
 def load_posts_from_supabase():
-    """Load posts from Supabase"""
+    """Load posts from both LinkedIn and Blog tables in Supabase"""
     try:
         from src.storage import build_supabase_client
         supabase_url = st.secrets.get("SUPABASE_URL")
         supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
         supabase_client = build_supabase_client(supabase_url, supabase_key)
         
+        all_posts = []
+        
         if supabase_client:
-            result = supabase_client.table("podcast_posts").select("*").order("created_at", desc=True).execute()
-            return result.data if result.data else []
+            # Load LinkedIn posts
+            try:
+                linkedin_result = supabase_client.table("linkedin_posts").select("*").order("created_at", desc=True).execute()
+                if linkedin_result.data:
+                    all_posts.extend(linkedin_result.data)
+            except Exception as e:
+                print(f"Warning: Could not load LinkedIn posts: {e}")
+            
+            # Load Blog posts
+            try:
+                blog_result = supabase_client.table("blog_posts").select("*").order("created_at", desc=True).execute()
+                if blog_result.data:
+                    all_posts.extend(blog_result.data)
+            except Exception as e:
+                print(f"Warning: Could not load Blog posts: {e}")
+            
+            # Fallback: Try to load from old podcast_posts table if separate tables don't exist
+            if not all_posts:
+                try:
+                    fallback_result = supabase_client.table("podcast_posts").select("*").order("created_at", desc=True).execute()
+                    if fallback_result.data:
+                        all_posts.extend(fallback_result.data)
+                except Exception as e:
+                    print(f"Warning: Could not load from fallback table: {e}")
+            
+            return all_posts
         else:
             return []
     except Exception as e:
@@ -801,6 +827,10 @@ if "last_run_time" not in st.session_state:
 transcripts = load_transcripts_from_supabase()
 posts = load_posts_from_supabase()
 
+# Separate posts by type for dashboard
+linkedin_posts_count = len([p for p in posts if p.get('post_type') == 'linkedin'])
+blog_posts_count = len([p for p in posts if p.get('post_type') == 'blog'])
+
 # Status Dashboard
 st.markdown("""
 <div class="status-dashboard">
@@ -816,8 +846,12 @@ st.markdown("""
         <div class="status-title">📱 LinkedIn Posts</div>
         <div class="status-value">{}</div>
     </div>
+    <div class="status-card">
+        <div class="status-title">📝 Blog Posts</div>
+        <div class="status-value">{}</div>
+    </div>
 </div>
-""".format(len(transcripts), len(posts)), unsafe_allow_html=True)
+""".format(len(transcripts), linkedin_posts_count, blog_posts_count), unsafe_allow_html=True)
 
 # Content Generation Section
 st.markdown('<h4 class="section-title">🎯 Content Generation</h4>', unsafe_allow_html=True)
@@ -902,7 +936,7 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
                             posts_content = "---POST_BREAK---".join(linkedin_posts)
                             store_posts(
                                 supabase_client,
-                                "podcast_posts",
+                                "linkedin_posts",  # Use separate table for LinkedIn posts
                                 selected_transcript['guid'],
                                 selected_transcript['title'],
                                 selected_transcript.get('published_at', ''),
@@ -928,7 +962,7 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
                         if supabase_client:
                             store_posts(
                                 supabase_client,
-                                "podcast_posts",
+                                "blog_posts",  # Use separate table for blog posts
                                 selected_transcript['guid'],
                                 selected_transcript['title'],
                                 selected_transcript.get('published_at', ''),
@@ -1070,21 +1104,21 @@ with col2:
         # LinkedIn posts selector
         linkedin_options = []
         for i, post in enumerate(linkedin_posts):
-            created_at = post.get('created_at', '')
-            published_at = post.get('published_at', '')
-            date_to_use = published_at or created_at
+            # Use created_at from the post to show when it was generated
+            post_created_at = post.get('created_at', '')
             
-            if date_to_use:
+            if post_created_at:
                 try:
                     from datetime import datetime
-                    if 'T' in date_to_use:
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    if 'T' in post_created_at:
+                        if post_created_at.endswith('Z'):
+                            dt = datetime.fromisoformat(post_created_at.replace('Z', '+00:00'))
                         else:
-                            dt = datetime.fromisoformat(date_to_use)
+                            dt = datetime.fromisoformat(post_created_at)
                     else:
-                        dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d')
+                        dt = datetime.fromisoformat(post_created_at)
+                    # Show date and time when the post was generated
+                    date_str = dt.strftime('%Y-%m-%d %H:%M')
                 except Exception:
                     date_str = 'Unknown date'
             else:
@@ -1092,8 +1126,8 @@ with col2:
             
             # Create a truncated title for the dropdown
             title = post['title']
-            if len(title) > 40:
-                title = title[:37] + "..."
+            if len(title) > 30:
+                title = title[:27] + "..."
             
             linkedin_options.append(f"{title} ({date_str})")
         
@@ -1168,21 +1202,21 @@ with col3:
         # Blog posts selector
         blog_options = []
         for i, post in enumerate(blog_posts):
-            created_at = post.get('created_at', '')
-            published_at = post.get('published_at', '')
-            date_to_use = published_at or created_at
+            # Use created_at from the post to show when it was generated
+            post_created_at = post.get('created_at', '')
             
-            if date_to_use:
+            if post_created_at:
                 try:
                     from datetime import datetime
-                    if 'T' in date_to_use:
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    if 'T' in post_created_at:
+                        if post_created_at.endswith('Z'):
+                            dt = datetime.fromisoformat(post_created_at.replace('Z', '+00:00'))
                         else:
-                            dt = datetime.fromisoformat(date_to_use)
+                            dt = datetime.fromisoformat(post_created_at)
                     else:
-                        dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d')
+                        dt = datetime.fromisoformat(post_created_at)
+                    # Show date and time when the post was generated
+                    date_str = dt.strftime('%Y-%m-%d %H:%M')
                 except Exception:
                     date_str = 'Unknown date'
             else:
@@ -1190,8 +1224,8 @@ with col3:
             
             # Create a truncated title for the dropdown
             title = post['title']
-            if len(title) > 40:
-                title = title[:37] + "..."
+            if len(title) > 30:
+                title = title[:27] + "..."
             
             blog_options.append(f"{title} ({date_str})")
         

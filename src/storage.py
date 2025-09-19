@@ -254,32 +254,43 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
         else:
             published_at_value = None
             
-        # Create a unique identifier that combines guid and post_type
-        unique_id = f"{guid}_{post_type}"
+        # Generate a unique ID for this specific post (allows multiple posts per transcript)
+        import uuid
+        post_id = str(uuid.uuid4())
         
         row = {
-            "guid": guid,
+            "id": post_id,  # Unique ID for this specific post
+            "guid": guid,   # Original transcript GUID for linking
             "title": title,
             "published_at": published_at_value,
             "posts_content": content,
             "post_type": post_type,
-            "unique_id": unique_id,  # Add unique identifier
+            "created_at": datetime.now().isoformat(),  # Timestamp when post was created
         }
         
-        print(f"  📤 Supabase: Sending upsert request to table '{table}'")
-        print(f"  📤 Supabase: Unique ID: {unique_id}")
-        # Use unique_id as the conflict resolution key
-        resp = client.table(table).upsert(row, on_conflict="unique_id").execute()
+        print(f"  📤 Supabase: Sending insert request to table '{table}'")
+        print(f"  📤 Supabase: Post ID: {post_id}")
+        print(f"  📤 Supabase: Row data: {row}")
         
-        print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
-        print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
-        
-        if getattr(resp, "data", None) is not None or getattr(resp, "status_code", 200) in (200, 201):
+        # Try insert first
+        try:
+            resp = client.table(table).insert(row).execute()
+            print(f"  📤 Supabase: Insert successful")
+            print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
             print(f"  ✅ Supabase: Successfully stored posts for '{title}'")
             return True
-        else:
-            print(f"  ❌ Supabase: Failed to store posts - invalid response")
-            return False
+        except Exception as insert_error:
+            print(f"  📤 Supabase: Insert failed, trying update: {insert_error}")
+            # If insert fails, try update
+            try:
+                resp = client.table(table).update(row).eq("id", post_id).execute()
+                print(f"  📤 Supabase: Update successful")
+                print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
+                print(f"  ✅ Supabase: Successfully updated posts for '{title}'")
+                return True
+            except Exception as update_error:
+                print(f"  ❌ Supabase: Both insert and update failed: {update_error}")
+                return False
     except Exception as ex:
         print(f"  ❌ Supabase posts storage failed: {ex}")
         print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
