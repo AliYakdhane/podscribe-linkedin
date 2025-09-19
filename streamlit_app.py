@@ -1102,67 +1102,13 @@ function logoutFunction() {
 }
 </script>
 """, unsafe_allow_html=True)
-        color: #1e293b !important;
-    }
-    
-    /* Ultra-specific targeting for Streamlit selectbox */
-    div[data-testid="stSelectbox"] [data-baseweb="select"] [data-baseweb="select__single-value"] {
-        color: #1e293b !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Target by test ID */
-    [data-testid="stSelectbox"] [data-baseweb="select"] span {
-        color: #1e293b !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Nuclear option - target everything in selectbox */
-    [data-testid="stSelectbox"] * {
-        color: #1e293b !important;
-    }
-    
-    /* Alternative approach using CSS custom properties */
-    .stSelectbox {
-        --text-color: #1e293b !important;
-    }
-    
-    .stSelectbox * {
-        color: var(--text-color) !important;
-    }
-    
-    
-    /* Content display */
-    .content-display {
-        background: #ffffff;
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        border-left: 4px solid #3b82f6;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .content-title {
-        color: #1e293b;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-    }
-    
-    .content-meta {
-        color: #64748b;
-        font-size: 0.85rem;
-        margin: 0 0 1rem 0;
-    }
-    
-    .content-text {
-        color: #374151;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        font-size: 0.95rem;
-    }
-    
-    /* Tabs */
+
+# Footer
+st.markdown("""
+<div style="text-align: center; padding: 2rem; color: #6b7280; font-size: 0.9rem;">
+    🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
+</div>
+""", unsafe_allow_html=True)
     .stTabs [data-baseweb="tab-list"] {
         background: #f8fafc;
         border-radius: 8px 8px 0 0;
