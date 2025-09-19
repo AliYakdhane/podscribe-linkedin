@@ -745,35 +745,6 @@ st.markdown("""
     🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
-        text-decoration: underline !important;
-        font-size: 0.9rem !important;
-        padding: 0.25rem 0.5rem !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-    }
-    
-    .stButton > button:hover {
-        background: rgba(59, 130, 246, 0.1) !important;
-        color: #2563eb !important;
-    }
-    
-</style>
-""", unsafe_allow_html=True)
-
-# Main authentication check
-# Check authentication using new session manager or fallback
-if USE_SUPABASE_SESSIONS:
-    # Use new Supabase-based session management
-    initialize_session()
-    if not is_authenticated():
-        # Try to restore session from browser storage
-        st.markdown("""
-        <script>
-        // Try to restore session from localStorage
-        const savedSessionId = localStorage.getItem('podcast_session_id');
-        if (savedSessionId && !window.sessionRestored) {
-            window.sessionRestored = true;
-            // Redirect with session_id to restore session
             const url = new URL(window.location);
             url.searchParams.set('session_id', savedSessionId);
             window.location.href = url.toString();
