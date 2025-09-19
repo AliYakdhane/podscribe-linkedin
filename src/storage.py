@@ -254,16 +254,22 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
         else:
             published_at_value = None
             
+        # Create a unique identifier that combines guid and post_type
+        unique_id = f"{guid}_{post_type}"
+        
         row = {
             "guid": guid,
             "title": title,
             "published_at": published_at_value,
             "posts_content": content,
             "post_type": post_type,
+            "unique_id": unique_id,  # Add unique identifier
         }
         
         print(f"  📤 Supabase: Sending upsert request to table '{table}'")
-        resp = client.table(table).upsert(row, on_conflict="guid").execute()
+        print(f"  📤 Supabase: Unique ID: {unique_id}")
+        # Use unique_id as the conflict resolution key
+        resp = client.table(table).upsert(row, on_conflict="unique_id").execute()
         
         print(f"  📤 Supabase: Response status: {getattr(resp, 'status_code', 'Unknown')}")
         print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
