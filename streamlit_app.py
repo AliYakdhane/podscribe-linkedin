@@ -1375,7 +1375,10 @@ with col3:
                     
                     # Display excerpt if available
                     if 'excerpt' in parsed_content:
-                        st.markdown(f'<div class="content-excerpt">{parsed_content["excerpt"]}</div>', unsafe_allow_html=True)
+                        # Use Streamlit's built-in components instead of custom HTML
+                        with st.container():
+                            st.markdown("**Excerpt:**")
+                            st.info(parsed_content["excerpt"])
                     
                     # Display main content
                     if 'content' in parsed_content:
@@ -1383,8 +1386,13 @@ with col3:
                     
                     # Display tags if available
                     if 'tags' in parsed_content and parsed_content['tags']:
-                        tags_text = ', '.join(parsed_content['tags'])
-                        st.markdown(f'<div class="content-tags"><strong>Tags:</strong> {tags_text}</div>', unsafe_allow_html=True)
+                        with st.container():
+                            st.markdown("**Tags:**")
+                            # Use Streamlit's built-in tag display
+                            cols = st.columns(min(len(parsed_content['tags']), 5))
+                            for i, tag in enumerate(parsed_content['tags'][:5]):
+                                with cols[i]:
+                                    st.markdown(f"`{tag}`")
                 else:
                     # Display as plain text
                     st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
