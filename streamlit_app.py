@@ -615,15 +615,21 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
 # Content Library
 st.markdown('<h4 class="section-title">📚 Content Library</h4>', unsafe_allow_html=True)
 
-# Two column layout for transcripts and generated content
-col1, col2 = st.columns(2)
+# Three column layout: transcripts, LinkedIn posts, and blog posts
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown('<h5 class="form-title">📝 Transcripts</h5>', unsafe_allow_html=True)
+    st.markdown('<h5 class="form-title">📝 Podcast Transcripts</h5>', unsafe_allow_html=True)
+    
+    # Show transcript count at the top
+    if transcripts:
+        st.metric("Total Transcripts", len(transcripts))
+        st.markdown("---")
     
     if transcripts:
+        # Transcript selector
+        transcript_options = []
         for i, transcript in enumerate(transcripts):
-            # Parse date
             created_at = transcript.get('created_at', '')
             published_at = transcript.get('published_at', '')
             date_to_use = published_at or created_at
@@ -638,55 +644,32 @@ with col1:
                             dt = datetime.fromisoformat(date_to_use)
                     else:
                         dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except Exception as e:
-                    date_str = date_to_use or 'Unknown date'
+                    date_str = dt.strftime('%Y-%m-%d')
+                except Exception:
+                    date_str = 'Unknown date'
             else:
                 date_str = 'Unknown date'
             
-            # Display transcript
-            st.markdown(f"""
-            <div class="content-display">
-                <div class="content-title">{transcript['title']}</div>
-                <div class="content-meta">Saved: {date_str}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            # Create a truncated title for the dropdown
+            title = transcript['title']
+            if len(title) > 50:
+                title = title[:47] + "..."
             
-            # Show transcript content with expand/collapse
-            transcript_content = transcript['transcript_content']
-            content_key = f"transcript_expanded_{i}"
+            transcript_options.append(f"{title} ({date_str})")
+        
+        selected_transcript_idx = st.selectbox(
+            "Select Transcript:",
+            range(len(transcript_options)),
+            format_func=lambda x: transcript_options[x],
+            key="transcript_selector"
+        )
+        
+        if selected_transcript_idx is not None:
+            selected_transcript = transcripts[selected_transcript_idx]
             
-            if content_key not in st.session_state:
-                st.session_state[content_key] = False
-            
-            # Show preview or full content
-            if len(transcript_content) > 1000:
-                if not st.session_state[content_key]:
-                    preview = transcript_content[:1000] + "..."
-                    st.markdown(f'<div class="content-text">{preview}</div>', unsafe_allow_html=True)
-                    if st.button(f"See More", key=f"expand_{i}"):
-                        st.session_state[content_key] = True
-                        st.rerun()
-                else:
-                    st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
-                    if st.button(f"See Less", key=f"collapse_{i}"):
-                        st.session_state[content_key] = False
-                        st.rerun()
-            else:
-                st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
-    else:
-        st.info("No transcripts available. Pull some episodes first!")
-
-with col2:
-    st.markdown('<h5 class="form-title">📱 LinkedIn Posts</h5>', unsafe_allow_html=True)
-    
-    linkedin_posts = [p for p in posts if p.get('post_type') == 'linkedin']
-    
-    if linkedin_posts:
-        for i, post in enumerate(linkedin_posts):
-            # Parse date
-            created_at = post.get('created_at', '')
-            published_at = post.get('published_at', '')
+            # Parse date for display
+            created_at = selected_transcript.get('created_at', '')
+            published_at = selected_transcript.get('published_at', '')
             date_to_use = published_at or created_at
             
             if date_to_use:
@@ -705,16 +688,122 @@ with col2:
             else:
                 date_str = 'Unknown date'
             
-            # Display post
+            # Display selected transcript
             st.markdown(f"""
             <div class="content-display">
-                <div class="content-title">{post['title']}</div>
+                <div class="content-title">{selected_transcript['title']}</div>
                 <div class="content-meta">Saved: {date_str}</div>
             </div>
             """, unsafe_allow_html=True)
             
-            # Parse and display LinkedIn posts
-            posts_content = post['posts_content']
+            # Show transcript content with expand/collapse
+            transcript_content = selected_transcript['transcript_content']
+            content_key = f"transcript_expanded_{selected_transcript_idx}"
+            
+            if content_key not in st.session_state:
+                st.session_state[content_key] = False
+            
+            # Show preview or full content
+            if len(transcript_content) > 1000:
+                if not st.session_state[content_key]:
+                    preview = transcript_content[:1000] + "..."
+                    st.markdown(f'<div class="content-text">{preview}</div>', unsafe_allow_html=True)
+                    if st.button(f"See More", key=f"expand_{selected_transcript_idx}"):
+                        st.session_state[content_key] = True
+                        st.rerun()
+                else:
+                    st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+                    if st.button(f"See Less", key=f"collapse_{selected_transcript_idx}"):
+                        st.session_state[content_key] = False
+                        st.rerun()
+            else:
+                st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+        
+    else:
+        st.info("No transcripts available. Pull some episodes first!")
+
+with col2:
+    st.markdown('<h5 class="form-title">📱 LinkedIn Posts</h5>', unsafe_allow_html=True)
+    
+    # Organize posts by type
+    linkedin_posts = [p for p in posts if p.get('post_type') == 'linkedin']
+    
+    # Show LinkedIn post count at the top
+    if linkedin_posts:
+        st.metric("LinkedIn Posts", len(linkedin_posts))
+        st.markdown("---")
+    
+    if linkedin_posts:
+        # LinkedIn posts selector
+        linkedin_options = []
+        for i, post in enumerate(linkedin_posts):
+            created_at = post.get('created_at', '')
+            published_at = post.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                    date_str = dt.strftime('%Y-%m-%d')
+                except Exception:
+                    date_str = 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            # Create a truncated title for the dropdown
+            title = post['title']
+            if len(title) > 40:
+                title = title[:37] + "..."
+            
+            linkedin_options.append(f"{title} ({date_str})")
+        
+        selected_linkedin_idx = st.selectbox(
+            "Select LinkedIn Post:",
+            range(len(linkedin_options)),
+            format_func=lambda x: linkedin_options[x],
+            key="linkedin_post_selector"
+        )
+        
+        if selected_linkedin_idx is not None:
+            selected_post = linkedin_posts[selected_linkedin_idx]
+            
+            # Display selected LinkedIn post
+            created_at = selected_post.get('created_at', '')
+            published_at = selected_post.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as e:
+                    date_str = date_to_use or 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            st.markdown(f"""
+            <div class="content-display">
+                <div class="content-title">{selected_post['title']}</div>
+                <div class="content-meta">Saved: {date_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Parse and display individual LinkedIn posts
+            posts_content = selected_post['posts_content']
             
             # Try to split by POST_BREAK first, then fallback to ---
             if '---POST_BREAK---' in posts_content:
@@ -727,50 +816,96 @@ with col2:
                     st.markdown(f'<div class="content-text">{individual_post.strip()}</div>', unsafe_allow_html=True)
                     if j < len(individual_posts) - 1:
                         st.markdown('---')
+        
     else:
         st.info("No LinkedIn posts available. Generate some content first!")
 
-# Blog Posts Section
-st.markdown('<h5 class="form-title">📝 Blog Posts</h5>', unsafe_allow_html=True)
-
-blog_posts = [p for p in posts if p.get('post_type') == 'blog']
-
-if blog_posts:
-    for i, post in enumerate(blog_posts):
-        # Parse date
-        created_at = post.get('created_at', '')
-        published_at = post.get('published_at', '')
-        date_to_use = published_at or created_at
-        
-        if date_to_use:
-            try:
-                from datetime import datetime
-                if 'T' in date_to_use:
-                    if date_to_use.endswith('Z'):
-                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+with col3:
+    st.markdown('<h5 class="form-title">📝 Blog Posts</h5>', unsafe_allow_html=True)
+    
+    # Organize posts by type
+    blog_posts = [p for p in posts if p.get('post_type') == 'blog']
+    
+    # Show blog post count at the top
+    if blog_posts:
+        st.metric("Blog Posts", len(blog_posts))
+        st.markdown("---")
+    
+    if blog_posts:
+        # Blog posts selector
+        blog_options = []
+        for i, post in enumerate(blog_posts):
+            created_at = post.get('created_at', '')
+            published_at = post.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
                     else:
                         dt = datetime.fromisoformat(date_to_use)
-                else:
-                    dt = datetime.fromisoformat(date_to_use)
-                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-            except Exception as e:
-                date_str = date_to_use or 'Unknown date'
-        else:
-            date_str = 'Unknown date'
+                    date_str = dt.strftime('%Y-%m-%d')
+                except Exception:
+                    date_str = 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            # Create a truncated title for the dropdown
+            title = post['title']
+            if len(title) > 40:
+                title = title[:37] + "..."
+            
+            blog_options.append(f"{title} ({date_str})")
         
-        # Display post
-        st.markdown(f"""
-        <div class="content-display">
-            <div class="content-title">{post['title']}</div>
-            <div class="content-meta">Saved: {date_str}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        selected_blog_idx = st.selectbox(
+            "Select Blog Post:",
+            range(len(blog_options)),
+            format_func=lambda x: blog_options[x],
+            key="blog_post_selector"
+        )
         
-        # Display blog content
-        blog_content = post['posts_content']
-        st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
-else:
-    st.info("No blog posts available. Generate some content first!")
+        if selected_blog_idx is not None:
+            selected_post = blog_posts[selected_blog_idx]
+            
+            # Display selected blog post
+            created_at = selected_post.get('created_at', '')
+            published_at = selected_post.get('published_at', '')
+            date_to_use = published_at or created_at
+            
+            if date_to_use:
+                try:
+                    from datetime import datetime
+                    if 'T' in date_to_use:
+                        if date_to_use.endswith('Z'):
+                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                        else:
+                            dt = datetime.fromisoformat(date_to_use)
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+                except Exception as e:
+                    date_str = date_to_use or 'Unknown date'
+            else:
+                date_str = 'Unknown date'
+            
+            st.markdown(f"""
+            <div class="content-display">
+                <div class="content-title">{selected_post['title']}</div>
+                <div class="content-meta">Saved: {date_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Display blog content
+            blog_content = selected_post['posts_content']
+            st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+        
+    else:
+        st.info("No blog posts available. Generate some content first!")
 
 # Close main content div
 st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
