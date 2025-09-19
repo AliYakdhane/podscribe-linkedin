@@ -25,7 +25,7 @@ except ImportError as e:
 
 # Security configuration (fallback)
 ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = "5ca659c9fa66d91be324e790e225f488e0dca8e954b770afdb2691f553d9ccf6"  # "password" hashed with SHA-256
+# Password hash is now stored securely in secrets.toml
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
 
 # Set page config first - must be before any other Streamlit commands
@@ -696,8 +696,42 @@ if USE_SUPABASE_SESSIONS:
         st.stop()
 else:
     # Fallback to old session management
-    if not is_authenticated():
-        login_form()
+    def is_authenticated_fallback():
+        """Fallback authentication check"""
+        return "authenticated" in st.session_state and st.session_state.authenticated
+    
+    def login_form_fallback():
+        """Fallback login form"""
+        st.title("🔐 Admin Login")
+        
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Login")
+            
+            if submitted:
+                if username == ADMIN_USERNAME:
+                    # Get password hash from secrets
+                    stored_hash = st.secrets.get("ADMIN_PASSWORD_HASH")
+                    if not stored_hash:
+                        st.error("Admin password not configured. Please set ADMIN_PASSWORD_HASH in secrets.")
+                        return
+                    
+                    # Hash the provided password
+                    provided_hash = hashlib.sha256(password.encode()).hexdigest()
+                    
+                    # Use secure comparison
+                    if hmac.compare_digest(provided_hash, stored_hash):
+                        st.session_state.authenticated = True
+                        st.success("Login successful!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid password")
+                else:
+                    st.error("Invalid username")
+    
+    if not is_authenticated_fallback():
+        login_form_fallback()
         st.stop()
 
 # User is authenticated - continue with main app
@@ -1279,16 +1313,28 @@ st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
 
 # Logout functionality
 if st.query_params.get("logout_trigger"):
-    # Clear session state
-    for key in ["authenticated", "login_time", "username", "session_id"]:
-        if key in st.session_state:
-            del st.session_state[key]
-    
-    # Remove session file
-    try:
-        Path("session_data.json").unlink(missing_ok=True)
-    except Exception:
-        pass
+    if USE_SUPABASE_SESSIONS:
+        # Use Supabase session manager logout
+        try:
+            from src.session_manager import session_manager
+            session_manager.logout()
+        except Exception as e:
+            print(f"Error during Supabase logout: {e}")
+            # Fallback: clear session state manually
+            for key in ["authenticated", "login_time", "username", "session_id"]:
+                if key in st.session_state:
+                    del st.session_state[key]
+    else:
+        # Fallback logout for old system
+        for key in ["authenticated", "login_time", "username", "session_id"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # Remove session file
+        try:
+            Path("session_data.json").unlink(missing_ok=True)
+        except Exception:
+            pass
     
     # Clear query params and rerun
     st.query_params.clear()

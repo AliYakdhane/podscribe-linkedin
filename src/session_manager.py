@@ -16,8 +16,6 @@ except ImportError:
 
 # Session configuration
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = "your-password-hash-here"  # Should be set in secrets
 
 class SupabaseSessionManager:
     def __init__(self):
@@ -77,7 +75,14 @@ class SupabaseSessionManager:
     
     def create_session(self, username: str, password: str) -> bool:
         """Create a new session after successful authentication"""
+        # Check username first
+        if username != "admin":
+            print(f"Invalid username: {username}")
+            return False
+        
+        # Then verify password
         if not self._verify_password(password):
+            print("Invalid password")
             return False
         
         try:
@@ -217,11 +222,18 @@ class SupabaseSessionManager:
             import hashlib
             import hmac
             
-            # Get the stored hash from secrets or use the default
-            stored_hash = st.secrets.get("ADMIN_PASSWORD_HASH", "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8")
+            # Get the stored hash from secrets
+            stored_hash = st.secrets.get("ADMIN_PASSWORD_HASH")
+            print(f"Debug: Retrieved stored hash: {stored_hash[:10]}..." if stored_hash else "Debug: No stored hash found")
+            
+            if not stored_hash:
+                st.error("Admin password not configured. Please set ADMIN_PASSWORD_HASH in secrets.")
+                return False
             
             # Hash the provided password using SHA-256
             provided_hash = hashlib.sha256(password.encode()).hexdigest()
+            print(f"Debug: Provided password hash: {provided_hash[:10]}...")
+            print(f"Debug: Password match: {hmac.compare_digest(provided_hash, stored_hash)}")
             
             # Use secure comparison
             return hmac.compare_digest(provided_hash, stored_hash)
