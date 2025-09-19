@@ -1109,45 +1109,6 @@ st.markdown("""
     🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
-    .stTabs [data-baseweb="tab-list"] {
-        background: #f8fafc;
-        border-radius: 8px 8px 0 0;
-        border: 1px solid #e2e8f0;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: #f1f5f9;
-        color: #64748b;
-        border-radius: 8px 8px 0 0;
-        font-weight: 500;
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: #3b82f6;
-        color: white;
-        font-weight: 600;
-    }
-    
-    /* Responsive design */
-    @media (max-width: 768px) {
-        .two-column {
-            grid-template-columns: 1fr;
-        }
-        
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-        
-        .form-actions {
-            grid-template-columns: 1fr;
-        }
-        
-        .status-dashboard {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # JavaScript to force selectbox text color - Nuclear approach
 st.markdown("""
