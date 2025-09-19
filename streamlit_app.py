@@ -10,7 +10,20 @@ import time
 
 import streamlit as st
 
-# Security configuration
+# Add the src directory to the Python path
+sys.path.append(str(Path(__file__).parent / "src"))
+
+# Import new session manager
+try:
+    from src.session_manager import initialize_session, is_authenticated, login_form, logout_button
+    USE_SUPABASE_SESSIONS = True
+    print("✅ Using Supabase-based session management")
+except ImportError as e:
+    # Fallback to old session management if new one not available
+    USE_SUPABASE_SESSIONS = False
+    print(f"⚠️ Warning: Using fallback session management. Error: {e}")
+
+# Security configuration (fallback)
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = "5ca659c9fa66d91be324e790e225f488e0dca8e954b770afdb2691f553d9ccf6"  # "password" hashed with SHA-256
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
@@ -23,63 +36,13 @@ def verify_password(password: str, password_hash: str) -> bool:
     """Verify a password against its hash"""
     return hmac.compare_digest(hash_password(password), password_hash)
 
-def is_authenticated() -> bool:
-    """Check if user is authenticated and session is valid"""
-    if "authenticated" not in st.session_state:
-        return False
-    
-    if "login_time" not in st.session_state:
-        return False
-    
-    # Check if session has expired
-    if time.time() - st.session_state.login_time > SESSION_TIMEOUT:
-        # Clear session
-        for key in ["authenticated", "login_time", "username"]:
-            if key in st.session_state:
-                del st.session_state[key]
-        return False
-    
-    return st.session_state.authenticated
+# Old is_authenticated function removed - now using Supabase-based session manager
 
-def login_form():
-    """Display login form"""
-    st.title("🔐 Secure Access Required")
-    st.markdown("---")
-    
-    with st.form("login_form"):
-        st.subheader("Login to Podcast Transcript Puller")
-        
-        username = st.text_input("Username", placeholder="Enter your username")
-        password = st.text_input("Password", type="password", placeholder="Enter your password")
-        
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            login_button = st.form_submit_button("🔑 Login", use_container_width=True)
-        with col2:
-            if st.form_submit_button("❌ Cancel", use_container_width=True):
-                st.stop()
-        
-        if login_button:
-            if username == ADMIN_USERNAME and verify_password(password, ADMIN_PASSWORD_HASH):
-                st.session_state.authenticated = True
-                st.session_state.login_time = time.time()
-                st.session_state.username = username
-                st.success("✅ Login successful!")
-                st.rerun()
-            else:
-                st.error("❌ Invalid username or password")
-    
-    st.markdown("---")
-    st.caption("🔒 This application is protected. Contact the administrator for access.")
+# Old session management functions removed - now using Supabase-based session manager
 
-def logout_button():
-    """Display logout button in sidebar"""
-    if st.sidebar.button("🚪 Logout", use_container_width=True, key="logout_btn"):
-        # Clear all session state
-        for key in ["authenticated", "login_time", "username"]:
-            if key in st.session_state:
-                del st.session_state[key]
-        st.rerun()
+# Old session initialization removed - now handled by new session manager
+
+# Old login_form and logout functions removed - now using Supabase-based session manager
 
 # Set page config first
 st.set_page_config(
@@ -92,9 +55,36 @@ st.set_page_config(
 # Professional CSS styling
 st.markdown("""
 <style>
-    /* Global Styles */
+    /* Global Styles - Remove all default Streamlit padding */
     .main {
-        padding-top: 1rem;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Remove Streamlit's default spacing */
+    .stApp > header {
+        visibility: hidden;
+    }
+    
+    .stApp {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Hide Streamlit's default header */
+    .stApp > div:first-child {
+        display: none;
+    }
+    
+    /* Reduce spacing between elements */
+    .element-container {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Reduce spacing in main content */
+    .main .block-container {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
     }
     
     /* Header Styles */
@@ -313,32 +303,592 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Main authentication check
-if not is_authenticated():
-    login_form()
-    st.stop()
+# Check authentication using new session manager or fallback
+if USE_SUPABASE_SESSIONS:
+    # Use new Supabase-based session management
+    initialize_session()
+    if not is_authenticated():
+        # Try to restore session from browser storage
+        st.markdown("""
+        <script>
+        // Try to restore session from localStorage
+        const savedSessionId = localStorage.getItem('podcast_session_id');
+        if (savedSessionId && !window.sessionRestored) {
+            window.sessionRestored = true;
+            // Redirect with session_id to restore session
+            const url = new URL(window.location);
+            url.searchParams.set('session_id', savedSessionId);
+            window.location.href = url.toString();
+        }
+        </script>
+        """, unsafe_allow_html=True)
+        
+        login_form()
+        st.stop()
+else:
+    # Fallback to old session management
+    if not is_authenticated():
+        login_form()
+        st.stop()
 
 # User is authenticated - continue with main app
 
-# Professional Header
+# Custom CSS for clean, structured design
 st.markdown("""
-<div class="main-header">
-    <h1 style="margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.02em;">🎙️ Podcast AI Studio</h1>
-    <p style="margin: 1rem 0 0 0; font-size: 1.3rem; opacity: 0.95; font-weight: 300;">
-        Transform podcasts into engaging LinkedIn content with AI-powered automation
-    </p>
-    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
-        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            🤖 AI Transcription
-        </span>
-        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            📝 Content Generation
-        </span>
-        <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
-            ☁️ Cloud Sync
-        </span>
+<style>
+    /* Global styles */
+    .main {
+        padding-top: 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        background: #f8fafc;
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Top navigation bar */
+    .top-nav {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        background: #ffffff;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        z-index: 999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .nav-title {
+        color: #1e293b;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    
+    /* Main content spacing */
+    .main-content {
+        margin-top: 80px; /* Space for fixed header */
+        padding: 0;
+    }
+    
+    /* Top Navigation Bar */
+    .top-nav {
+        background: #ffffff;
+        border-bottom: 2px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        padding: 1rem 2rem;
+        margin: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .nav-title {
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .nav-logout-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .logout-btn {
+        background: #dc2626;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .logout-btn:hover {
+        background: #b91c1c;
+    }
+
+    /* Header styles */
+    .page-header {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .page-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .page-subtitle {
+        font-size: 1rem;
+        margin: 0;
+        opacity: 0.9;
+    }
+    
+    /* Status dashboard */
+    .status-dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-card {
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .status-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .status-title {
+        color: #64748b;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-value {
+        color: #1e293b;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    /* Content sections */
+    .content-section {
+        background: #ffffff;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        border: 2px solid #e2e8f0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    
+    .section-title {
+        color: #1e293b;
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3b82f6;
+    }
+    
+    /* Two column layout */
+    .two-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    /* Transcript selector */
+    .transcript-selector {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .selector-label {
+        color: #374151;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Content generation form */
+    .generation-form {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        border: 2px solid #e2e8f0;
+    }
+    
+    .form-title {
+        color: #1e293b;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0 0 1rem 0;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+    
+    /* Button styles */
+    .stButton > button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
+    
+    .stButton > button:hover {
+        background: #2563eb;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .stButton > button[kind="secondary"] {
+        background: #64748b;
+        box-shadow: 0 2px 4px rgba(100, 116, 139, 0.2);
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background: #475569;
+        box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+    }
+    
+    /* Input styles */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > div {
+        background: #ffffff;
+        color: #1e293b;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stSelectbox > div > div > div:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Selectbox dropdown styling - Force dark text */
+    .stSelectbox * {
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox > div > div > div > div {
+        color: #1e293b !important;
+        font-weight: 500 !important;
+    }
+    
+    .stSelectbox [data-baseweb="select"] {
+        color: #1e293b !important;
+        background: #ffffff !important;
+    }
+    
+    .stSelectbox [data-baseweb="select"] * {
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox [data-baseweb="select"] [data-baseweb="select__value-container"] {
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox [data-baseweb="select"] [data-baseweb="select__single-value"] {
+        color: #1e293b !important;
+        font-weight: 500 !important;
+    }
+    
+    .stSelectbox [data-baseweb="select"] [data-baseweb="select__placeholder"] {
+        color: #64748b !important;
+    }
+    
+    /* Additional targeting for selectbox text */
+    div[data-baseweb="select"] div[data-baseweb="select__single-value"] {
+        color: #1e293b !important;
+    }
+    
+    /* Target all possible selectbox text elements */
+    .stSelectbox span,
+    .stSelectbox div[role="combobox"],
+    .stSelectbox div[data-baseweb="select__single-value"] {
+        color: #1e293b !important;
+    }
+    
+    /* Force dark text in selectbox selected value */
+    .stSelectbox [data-baseweb="select"] [data-baseweb="select__single-value"] {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Target selectbox container text */
+    .stSelectbox [data-baseweb="select"] span {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Force all text in selectbox to be dark */
+    .stSelectbox [data-baseweb="select"] * {
+        color: #1e293b !important;
+    }
+    
+    /* Ultra-specific targeting for Streamlit selectbox */
+    div[data-testid="stSelectbox"] [data-baseweb="select"] [data-baseweb="select__single-value"] {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Target by test ID */
+    [data-testid="stSelectbox"] [data-baseweb="select"] span {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Nuclear option - target everything in selectbox */
+    [data-testid="stSelectbox"] * {
+        color: #1e293b !important;
+    }
+    
+    /* Alternative approach using CSS custom properties */
+    .stSelectbox {
+        --text-color: #1e293b !important;
+    }
+    
+    .stSelectbox * {
+        color: var(--text-color) !important;
+    }
+    
+    
+    /* Content display */
+    .content-display {
+        background: #ffffff;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        border-left: 4px solid #3b82f6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .content-title {
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .content-meta {
+        color: #64748b;
+        font-size: 0.85rem;
+        margin: 0 0 1rem 0;
+    }
+    
+    .content-text {
+        color: #374151;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        font-size: 0.95rem;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background: #f8fafc;
+        border-radius: 8px 8px 0 0;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: #f1f5f9;
+        color: #64748b;
+        border-radius: 8px 8px 0 0;
+        font-weight: 500;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: #3b82f6;
+        color: white;
+        font-weight: 600;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .two-column {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .status-dashboard {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# JavaScript to force selectbox text color - Nuclear approach
+st.markdown("""
+<script>
+// Nuclear function to fix ALL selectbox text colors
+function fixSelectboxTextColor() {
+    console.log('Fixing selectbox colors...');
+    
+    // Target every possible selectbox element
+    const allSelectboxes = document.querySelectorAll('*');
+    
+    allSelectboxes.forEach(element => {
+        // Check if this element is part of a selectbox
+        const isSelectbox = element.closest('[data-testid="stSelectbox"]') || 
+                           element.closest('.stSelectbox') ||
+                           element.hasAttribute('data-baseweb') ||
+                           element.classList.contains('stSelectbox');
+        
+        if (isSelectbox) {
+            // Force dark color on this element
+            element.style.setProperty('color', '#1e293b', 'important');
+            element.style.setProperty('font-weight', '600', 'important');
+            
+            // Also fix any child elements
+            const children = element.querySelectorAll('*');
+            children.forEach(child => {
+                child.style.setProperty('color', '#1e293b', 'important');
+                child.style.setProperty('font-weight', '600', 'important');
+            });
+        }
+    });
+    
+    // Specifically target the problematic elements from the console
+    const specificTargets = [
+        'h4[id*="gpt"]',
+        'h4[style*="rgb(243, 244, 246)"]',
+        'p[style*="rgb(156, 163, 175)"]'
+    ];
+    
+    specificTargets.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(el => {
+            el.style.setProperty('color', '#1e293b', 'important');
+            el.style.setProperty('font-weight', '600', 'important');
+            console.log('Fixed element:', el);
+        });
+    });
+}
+
+// Run immediately and continuously
+fixSelectboxTextColor();
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', fixSelectboxTextColor);
+window.addEventListener('load', fixSelectboxTextColor);
+
+// Aggressive MutationObserver
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' || mutation.type === 'attributes') {
+            setTimeout(fixSelectboxTextColor, 50);
+        }
+    });
+});
+
+observer.observe(document.body, { 
+    childList: true, 
+    subtree: true, 
+    attributes: true,
+    attributeFilter: ['style', 'class', 'id']
+});
+
+// Run every 500ms to catch stubborn elements
+setInterval(fixSelectboxTextColor, 500);
+</script>
+""", unsafe_allow_html=True)
+
+# Top Navigation Bar with Logout
+st.markdown("""
+<div class="top-nav">
+    <div class="nav-title">🎙️ Podcast AI Studio</div>
+    <div class="nav-logout-container">
+        <button class="logout-btn" onclick="logoutFunction()">🚪 Logout</button>
     </div>
 </div>
+
+<script>
+function logoutFunction() {
+    // Create a hidden form to submit logout
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.href;
+    
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'logout_trigger';
+    input.value = 'true';
+    
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
 """, unsafe_allow_html=True)
+
+# Handle logout via query parameters
+if st.query_params.get("logout_trigger"):
+    if USE_SUPABASE_SESSIONS:
+        # Use new session manager logout
+        from src.session_manager import session_manager
+        session_manager.logout()
+    else:
+        # Fallback logout
+        for key in ["authenticated", "login_time", "username"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # Remove session file
+        try:
+            Path("session_data.json").unlink(missing_ok=True)
+        except Exception:
+            pass
+    
+    st.rerun()
+
+# Main Content
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # Initialize session state
 if "last_run_output" not in st.session_state:
@@ -384,7 +934,6 @@ try:
     )
     from src.storage import StateStore
     from src.config_manager import save_user_config
-    st.success("✅ All modules imported successfully!")
 except Exception as e:
     st.error(f"❌ Import error: {str(e)}")
     st.code(traceback.format_exc())
@@ -748,319 +1297,628 @@ def compute_pending_counts(run_limit: int, show_id_override: str = "", url_overr
         return (0, 0, f"Error: {e}")
 
 # Sidebar
-with st.sidebar:
-    logout_button()
-
 # Process monitoring section removed for cleaner UI
 
 # System Status Dashboard
-st.markdown('<h2 class="section-header">📊 System Status</h2>', unsafe_allow_html=True)
-
 supabase_url = st.secrets.get("SUPABASE_URL")
 supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
 
-# Create status cards
-col1, col2, col3 = st.columns(3)
+# Load data counts
+try:
+    transcripts = load_transcripts_from_supabase()
+    transcript_count = len(transcripts)
+except:
+    transcript_count = 0
 
-with col1:
-    if supabase_url and supabase_key:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">☁️</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Cloud Storage</span>
-                </div>
-                <div style="width: 4px; height: 4px; background: #10b981; border-radius: 50%;"></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">⚠️</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Local Only</span>
-                </div>
-                <div style="width: 4px; height: 4px; background: #f59e0b; border-radius: 50%;"></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+try:
+    posts = load_posts_from_supabase()
+    posts_count = len(posts)
+except:
+    posts_count = 0
 
-with col2:
-    try:
-        transcripts = load_transcripts_from_supabase()
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">📝</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Transcripts</span>
-                </div>
-                <span style="font-size: 0.9rem; font-weight: 600; color: #a5b4fc;">{len(transcripts)}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    except:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">📝</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">Transcripts</span>
-                </div>
-                <span style="font-size: 0.9rem; font-weight: 600; color: #a5b4fc;">0</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-with col3:
-    try:
-        posts = load_posts_from_supabase()
-        st.markdown(f"""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">📱</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">LinkedIn Posts</span>
-                </div>
-                <span style="font-size: 0.9rem; font-weight: 600; color: #c4b5fd;">{len(posts)}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    except:
-        st.markdown("""
-        <div class="metric-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 1rem; margin-right: 0.4rem;">📱</span>
-                    <span style="color: #f3f4f6; font-size: 0.8rem; font-weight: 500;">LinkedIn Posts</span>
-                </div>
-                <span style="font-size: 0.9rem; font-weight: 600; color: #c4b5fd;">0</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+# Status dashboard
+st.markdown("""
+<div class="status-dashboard">
+    <div class="status-card">
+        <div class="status-icon">☁️</div>
+        <div class="status-title">Cloud Storage</div>
+        <div class="status-value">{cloud_status}</div>
+    </div>
+    <div class="status-card">
+        <div class="status-icon">📝</div>
+        <div class="status-title">Transcripts</div>
+        <div class="status-value">{transcript_count}</div>
+    </div>
+    <div class="status-card">
+        <div class="status-icon">📱</div>
+        <div class="status-title">Generated Content</div>
+        <div class="status-value">{posts_count}</div>
+    </div>
+</div>
+""".format(
+    cloud_status="✅ Connected" if (supabase_url and supabase_key) else "❌ Disconnected",
+    transcript_count=transcript_count,
+    posts_count=posts_count
+), unsafe_allow_html=True)
 # Main Content Section
-st.markdown('<h2 class="section-header">📚 Content Library</h2>', unsafe_allow_html=True)
+st.markdown('<h2 class="section-title">📚 Content Library</h2>', unsafe_allow_html=True)
 
-cols = st.columns(2)
+# Content Generation Section (Always Visible)
+st.markdown('<div class="generation-form">', unsafe_allow_html=True)
+st.markdown('<h3 class="form-title">🎨 Generate Content</h3>', unsafe_allow_html=True)
+
+# Voice and tone input
+st.markdown('<div class="form-row">', unsafe_allow_html=True)
+
+# Custom voice and tone input
+custom_voice = st.text_area(
+    "Voice & Tone Description", 
+    placeholder="Describe your desired voice and tone. For example:\n• Professional and authoritative\n• Friendly and conversational\n• Expert and technical\n• Inspiring and motivational\n• Analytical and data-driven",
+    height=100,
+    key="custom_voice_global",
+    help="Describe how you want the content to sound and feel. Be specific about the style, tone, and approach you want."
+)
+
+# Additional custom instructions
+custom_instructions = st.text_area(
+    "Additional Instructions (Optional)", 
+    placeholder="Add any specific requirements:\n• Use more technical terms\n• Include specific examples\n• Focus on certain topics\n• Target a specific audience",
+    height=100,
+    key="custom_instructions_global",
+    help="Add any specific requirements or guidelines for the content generation."
+)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Content generation buttons
+st.markdown('<div class="form-actions">', unsafe_allow_html=True)
+
+# Get selected transcript for generation
+transcripts = load_transcripts_from_supabase()
+if transcripts:
+    transcript_options = []
+    for i, transcript in enumerate(transcripts):
+        episode_title = transcript.get('title', 'Unknown Episode')
+        created_at = transcript.get('created_at', '')
+        published_at = transcript.get('published_at', '')
+        date_to_use = published_at or created_at
+        
+        if date_to_use:
+            try:
+                from datetime import datetime
+                if 'T' in date_to_use:
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                else:
+                    dt = datetime.fromisoformat(date_to_use)
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print(f"Date parsing error: {e}, raw date: {date_to_use}")
+                date_str = date_to_use or 'Unknown date'
+        else:
+            date_str = 'Unknown date'
+        
+        transcript_options.append(f"{episode_title} ({date_str})")
+    
+    selected_transcript_idx = st.selectbox("Select transcript to generate content from", range(len(transcript_options)), format_func=lambda x: transcript_options[x], key="global_transcript_selector")
+    
+    if selected_transcript_idx is not None and selected_transcript_idx < len(transcripts):
+        selected_transcript = transcripts[selected_transcript_idx]
+        transcript_content = selected_transcript.get('transcript_content', 'No content available')
+        episode_title = selected_transcript.get('title', 'Unknown Episode')
+        
+        # Prepare voice and instructions for generation
+        voice_to_use = custom_voice.strip() if custom_voice.strip() else "Professional and authoritative"
+        additional_instructions = custom_instructions.strip() if custom_instructions.strip() else ""
+        
+        # Show transcript length info
+        st.info(f"📊 Transcript length: {len(transcript_content):,} characters (will be processed using intelligent chunking if needed)")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("📱 Generate LinkedIn Posts", key="global_linkedin", type="primary", use_container_width=True):
+                try:
+                    from src.content_generator import ContentGenerator
+                    generator = ContentGenerator()
+                    
+                    with st.spinner("Generating LinkedIn posts..."):
+                        st.write(f"Using voice: {voice_to_use[:50]}...")
+                        st.write(f"Instructions: {additional_instructions[:50] if additional_instructions else 'None'}...")
+                        
+                        posts = generator.generate_linkedin_posts_custom(transcript_content, voice_to_use, additional_instructions, 3)
+                    
+                    if posts:
+                        st.success(f"Generated {len(posts)} LinkedIn posts!")
+                        
+                        # Display the generated posts
+                        for i, post in enumerate(posts, 1):
+                            st.markdown(f"**LinkedIn Post {i}:**")
+                            st.markdown(post)
+                            st.markdown("---")
+                        
+                        # Store posts in Supabase
+                        from src.storage import build_supabase_client, store_posts
+                        supabase_url = st.secrets.get("SUPABASE_URL")
+                        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+                        
+                        if supabase_url and supabase_key:
+                            supabase_client = build_supabase_client(supabase_url, supabase_key)
+                            if supabase_client:
+                                posts_text = "\n\n---\n\n".join(posts)
+                                store_posts(supabase_client, "podcast_posts", 
+                                          f"{selected_transcript.get('guid')}_linkedin", 
+                                          f"{episode_title} - LinkedIn Posts",
+                                          None, posts_text, "linkedin")
+                                st.success("LinkedIn posts saved to database!")
+                    else:
+                        st.error("No posts were generated. Please check your input and try again.")
+                except Exception as e:
+                    st.error(f"Error generating LinkedIn posts: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+                    
+                    # Additional debugging
+                    st.write("Debug info:")
+                    st.write(f"Transcript content length: {len(transcript_content)}")
+                    st.write(f"Voice: {voice_to_use}")
+                    st.write(f"Instructions: {additional_instructions}")
+                    
+                    # Check if OpenAI API key is available
+                    try:
+                        openai_key = st.secrets.get("OPENAI_API_KEY")
+                        if openai_key:
+                            st.write(f"OpenAI API key found: {openai_key[:10]}...")
+                        else:
+                            st.error("OpenAI API key not found in secrets!")
+                    except Exception as key_error:
+                        st.error(f"Error checking API key: {key_error}")
+        
+        with col2:
+            if st.button("📝 Generate Blog Post", key="global_blog", type="primary", use_container_width=True):
+                try:
+                    from src.content_generator import ContentGenerator
+                    generator = ContentGenerator()
+                    
+                    with st.spinner("Generating blog post..."):
+                        st.write(f"Using voice: {voice_to_use[:50]}...")
+                        st.write(f"Instructions: {additional_instructions[:50] if additional_instructions else 'None'}...")
+                        
+                        blog_data = generator.generate_blog_post_custom(transcript_content, voice_to_use, additional_instructions)
+                    
+                    if blog_data:
+                        st.success("Blog post generated!")
+                        
+                        # Display the generated blog post
+                        st.markdown(f"## {blog_data['title']}")
+                        st.markdown(blog_data['content'])
+                        st.markdown(f"**Tags:** {', '.join(blog_data['tags'])}")
+                        
+                        # Store blog post in Supabase
+                        from src.storage import build_supabase_client, store_posts
+                        supabase_url = st.secrets.get("SUPABASE_URL")
+                        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+                        
+                        if supabase_url and supabase_key:
+                            supabase_client = build_supabase_client(supabase_url, supabase_key)
+                            if supabase_client:
+                                blog_content = f"# {blog_data['title']}\n\n{blog_data['content']}\n\n**Tags:** {', '.join(blog_data['tags'])}"
+                                store_posts(supabase_client, "podcast_posts", 
+                                          f"{selected_transcript.get('guid')}_blog", 
+                                          blog_data['title'],
+                                          None, blog_content, "blog")
+                                st.success("Blog post saved to database!")
+                    else:
+                        st.error("No blog post was generated. Please check your input and try again.")
+                except Exception as e:
+                    st.error(f"Error generating blog post: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+                    
+                    # Additional debugging
+                    st.write("Debug info:")
+                    st.write(f"Transcript content length: {len(transcript_content)}")
+                    st.write(f"Voice: {voice_to_use}")
+                    st.write(f"Instructions: {additional_instructions}")
+                    
+                    # Check if OpenAI API key is available
+                    try:
+                        openai_key = st.secrets.get("OPENAI_API_KEY")
+                        if openai_key:
+                            st.write(f"OpenAI API key found: {openai_key[:10]}...")
+                        else:
+                            st.error("OpenAI API key not found in secrets!")
+                    except Exception as key_error:
+                        st.error(f"Error checking API key: {key_error}")
+        
+        with col3:
+            if st.button("🚀 Generate Both", key="global_both", type="primary", use_container_width=True):
+                try:
+                    from src.content_generator import ContentGenerator
+                    generator = ContentGenerator()
+                    
+                    with st.spinner("Generating both LinkedIn posts and blog post..."):
+                        st.write(f"Using voice: {voice_to_use[:50]}...")
+                        st.write(f"Instructions: {additional_instructions[:50] if additional_instructions else 'None'}...")
+                        
+                        posts = generator.generate_linkedin_posts_custom(transcript_content, voice_to_use, additional_instructions, 3)
+                        blog_data = generator.generate_blog_post_custom(transcript_content, voice_to_use, additional_instructions)
+                    
+                    if posts and blog_data:
+                        st.success("Both LinkedIn posts and blog post generated!")
+                        
+                        # Display LinkedIn posts
+                        st.markdown("### 📱 LinkedIn Posts")
+                        for i, post in enumerate(posts, 1):
+                            st.markdown(f"**Post {i}:**")
+                            st.markdown(post)
+                            st.markdown("---")
+                        
+                        # Display blog post
+                        st.markdown("### 📝 Blog Post")
+                        st.markdown(f"## {blog_data['title']}")
+                        st.markdown(blog_data['content'])
+                        st.markdown(f"**Tags:** {', '.join(blog_data['tags'])}")
+                        
+                        # Store both in Supabase
+                        from src.storage import build_supabase_client, store_posts
+                        supabase_url = st.secrets.get("SUPABASE_URL")
+                        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+                        
+                        if supabase_url and supabase_key:
+                            supabase_client = build_supabase_client(supabase_url, supabase_key)
+                            if supabase_client:
+                                # Store LinkedIn posts
+                                posts_text = "\n\n---\n\n".join(posts)
+                                store_posts(supabase_client, "podcast_posts", 
+                                          f"{selected_transcript.get('guid')}_linkedin", 
+                                          f"{episode_title} - LinkedIn Posts",
+                                          None, posts_text, "linkedin")
+                                
+                                # Store blog post
+                                blog_content = f"# {blog_data['title']}\n\n{blog_data['content']}\n\n**Tags:** {', '.join(blog_data['tags'])}"
+                                store_posts(supabase_client, "podcast_posts", 
+                                          f"{selected_transcript.get('guid')}_blog", 
+                                          blog_data['title'],
+                                          None, blog_content, "blog")
+                                
+                                st.success("Both saved to database!")
+                    else:
+                        st.error("Failed to generate content. Please check your input and try again.")
+                except Exception as e:
+                    st.error(f"Error generating content: {e}")
+                    import traceback
+                    st.code(traceback.format_exc())
+                    
+                    # Additional debugging
+                    st.write("Debug info:")
+                    st.write(f"Transcript content length: {len(transcript_content)}")
+                    st.write(f"Voice: {voice_to_use}")
+                    st.write(f"Instructions: {additional_instructions}")
+                    
+                    # Check if OpenAI API key is available
+                    try:
+                        openai_key = st.secrets.get("OPENAI_API_KEY")
+                        if openai_key:
+                            st.write(f"OpenAI API key found: {openai_key[:10]}...")
+                        else:
+                            st.error("OpenAI API key not found in secrets!")
+                    except Exception as key_error:
+                        st.error(f"Error checking API key: {key_error}")
+else:
+    st.info("No transcripts available for content generation.")
+
+st.markdown('</div>', unsafe_allow_html=True)  # Close form-actions
+st.markdown('</div>', unsafe_allow_html=True)  # Close generation-form
+
+# Two column layout for transcripts and content
+st.markdown('<div class="two-column">', unsafe_allow_html=True)
 
 # Left: transcripts list
-with cols[0]:
-    st.markdown('<h3 class="section-header" style="font-size: 1.3rem; margin-bottom: 1rem;">📝 Podcast Transcripts</h3>', unsafe_allow_html=True)
-    
-    # Load transcripts from Supabase
-    transcripts = load_transcripts_from_supabase()
-    
-    if not transcripts:
-        st.info("No transcripts yet.")
-    else:
-        # Create options for selectbox
-        transcript_options = []
-        for transcript in transcripts:
-            episode_title = transcript.get('title', 'Unknown Episode')
-            # Try different date fields
-            created_at = transcript.get('created_at', '')
-            published_at = transcript.get('published_at', '')
-            
-            # Use published_at if available, otherwise created_at
-            date_to_use = published_at or created_at
-            
-            if date_to_use:
-                try:
-                    from datetime import datetime
-                    # Handle different date formats
-                    if 'T' in date_to_use:
-                        # ISO format with T
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
-                        else:
-                            dt = datetime.fromisoformat(date_to_use)
-                    else:
-                        # Try parsing as regular date
-                        dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except Exception as e:
-                    print(f"Date parsing error: {e}, raw date: {date_to_use}")
-                    date_str = date_to_use or 'Unknown date'
-            else:
-                date_str = 'Unknown date'
-            
-            transcript_options.append(f"{episode_title} ({date_str})")
+st.markdown('<div>', unsafe_allow_html=True)
+st.markdown('<h3 class="section-title" style="font-size: 1.1rem; margin-bottom: 1rem;">📝 Podcast Transcripts</h3>', unsafe_allow_html=True)
+
+# Load transcripts from Supabase
+transcripts = load_transcripts_from_supabase()
+
+if not transcripts:
+    st.info("No transcripts yet.")
+else:
+    # Create options for selectbox
+    transcript_options = []
+    for transcript in transcripts:
+        episode_title = transcript.get('title', 'Unknown Episode')
+        # Try different date fields
+        created_at = transcript.get('created_at', '')
+        published_at = transcript.get('published_at', '')
         
-        selected_idx = st.selectbox("Select transcript", range(len(transcript_options)), format_func=lambda x: transcript_options[x])
+        # Use published_at if available, otherwise created_at
+        date_to_use = published_at or created_at
         
-        if selected_idx is not None and selected_idx < len(transcripts):
-            selected_transcript = transcripts[selected_idx]
-            episode_title = selected_transcript.get('title', 'Unknown Episode')
-            transcript_content = selected_transcript.get('transcript_content', 'No content available')
-            # Try different date fields
-            created_at = selected_transcript.get('created_at', '')
-            published_at = selected_transcript.get('published_at', '')
-            
-            # Use published_at if available, otherwise created_at
-            date_to_use = published_at or created_at
-            
-            if date_to_use:
-                try:
-                    from datetime import datetime
-                    # Handle different date formats
-                    if 'T' in date_to_use:
-                        # ISO format with T
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
-                        else:
-                            dt = datetime.fromisoformat(date_to_use)
+        if date_to_use:
+            try:
+                from datetime import datetime
+                # Handle different date formats
+                if 'T' in date_to_use:
+                    # ISO format with T
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
                     else:
-                        # Try parsing as regular date
                         dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except Exception as e:
-                    print(f"Date parsing error: {e}, raw date: {date_to_use}")
-                    date_str = date_to_use or 'Unknown date'
-            else:
-                date_str = 'Unknown date'
-            
-            st.markdown(f"""
-            <div class="content-display" style="position: relative;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
-                        <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
-                    </div>
+                else:
+                    # Try parsing as regular date
+                    dt = datetime.fromisoformat(date_to_use)
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print(f"Date parsing error: {e}, raw date: {date_to_use}")
+                date_str = date_to_use or 'Unknown date'
+        else:
+            date_str = 'Unknown date'
+        
+        transcript_options.append(f"{episode_title} ({date_str})")
+    
+    selected_idx = st.selectbox("Select transcript", range(len(transcript_options)), format_func=lambda x: transcript_options[x])
+    
+    if selected_idx is not None and selected_idx < len(transcripts):
+        selected_transcript = transcripts[selected_idx]
+        episode_title = selected_transcript.get('title', 'Unknown Episode')
+        transcript_content = selected_transcript.get('transcript_content', 'No content available')
+        # Try different date fields
+        created_at = selected_transcript.get('created_at', '')
+        published_at = selected_transcript.get('published_at', '')
+        
+        # Use published_at if available, otherwise created_at
+        date_to_use = published_at or created_at
+        
+        if date_to_use:
+            try:
+                from datetime import datetime
+                # Handle different date formats
+                if 'T' in date_to_use:
+                    # ISO format with T
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                else:
+                    # Try parsing as regular date
+                    dt = datetime.fromisoformat(date_to_use)
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except Exception as e:
+                print(f"Date parsing error: {e}, raw date: {date_to_use}")
+                date_str = date_to_use or 'Unknown date'
+        else:
+            date_str = 'Unknown date'
+        
+        st.markdown(f"""
+        <div class="content-display" style="position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h4 style="margin: 0 0 0.25rem 0; color: #1e293b; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+                    <p style="margin: 0; color: #1e293b; font-size: 0.75rem;">Saved: {date_str}</p>
                 </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Create a unique key for this transcript's expand/collapse state
+        transcript_key = f"transcript_expanded_{selected_idx}"
+        
+        # Check if transcript is expanded
+        is_expanded = st.session_state.get(transcript_key, False)
+        
+        # Format transcript content with proper paragraphs
+        formatted_content = transcript_content.replace('\n\n', '\n\n').replace('\n', ' ')
+        
+        # Show preview or full content
+        if len(formatted_content) > 1000 and not is_expanded:
+            preview_content = formatted_content[:1000] + "..."
+            st.markdown(f"""
+            <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
+                       border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
+                       white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
+            {preview_content}
             </div>
             """, unsafe_allow_html=True)
             
+            if st.button("See More", key=f"expand_{selected_idx}", type="secondary", use_container_width=False):
+                st.session_state[transcript_key] = True
+                st.rerun()
+        else:
+            st.markdown(f"""
+            <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
+                       border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
+                       white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
+            {formatted_content}
+            </div>
+            """, unsafe_allow_html=True)
             
-            # Create a unique key for this transcript's expand/collapse state
-            transcript_key = f"transcript_expanded_{selected_idx}"
-            
-            # Check if transcript is expanded
-            is_expanded = st.session_state.get(transcript_key, False)
-            
-            # Format transcript content with proper paragraphs
-            formatted_content = transcript_content.replace('\n\n', '\n\n').replace('\n', ' ')
-            
-            # Show preview or full content
-            if len(formatted_content) > 1000 and not is_expanded:
-                preview_content = formatted_content[:1000] + "..."
-                st.markdown(f"""
-                <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
-                           border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
-                           white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
-                {preview_content}
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("""
-                <div style="text-align: center; margin-top: 0.5rem;">
-                """, unsafe_allow_html=True)
-                
-                if st.button("See More", key=f"expand_{selected_idx}", type="secondary", use_container_width=False):
-                    st.session_state[transcript_key] = True
+            if len(formatted_content) > 1000:
+                if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary", use_container_width=False):
+                    st.session_state[transcript_key] = False
                     st.rerun()
-                
-                st.markdown("""
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div style="background: #1f2937; padding: 1rem; border-radius: 8px; margin: 0.5rem 0; 
-                           border-left: 3px solid #3b82f6; font-family: 'Courier New', monospace; 
-                           white-space: pre-wrap; line-height: 1.6; color: #f3f4f6; font-size: 0.85rem;">
-                {formatted_content}
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if len(formatted_content) > 1000:
-                    st.markdown("""
-                    <div style="text-align: center; margin-top: 0.5rem;">
-                    """, unsafe_allow_html=True)
-                    
-                    if st.button("See Less", key=f"collapse_{selected_idx}", type="secondary", use_container_width=False):
-                        st.session_state[transcript_key] = False
-                        st.rerun()
-                    
-                    st.markdown("""
-                    </div>
-                    """, unsafe_allow_html=True)
+
+
+st.markdown('</div>', unsafe_allow_html=True)  # Close left column
 
 # Right: posts list
-with cols[1]:
-    st.markdown('<h3 class="section-header" style="font-size: 1.3rem; margin-bottom: 1rem;">📱 LinkedIn Drafts</h3>', unsafe_allow_html=True)
-    
-    # Load posts from Supabase
-    posts = load_posts_from_supabase()
-    
-    if not posts:
-        st.info("No drafts yet.")
-    else:
-        # Create options for selectbox
-        post_options = []
-        for post in posts:
-            episode_title = post.get('title', 'Unknown Episode')
-            created_at = post.get('created_at', '')
-            if created_at:
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    date_str = created_at
-            else:
-                date_str = 'Unknown date'
-            
-            post_options.append(f"{episode_title} ({date_str})")
+st.markdown('<div>', unsafe_allow_html=True)
+st.markdown('<h3 class="section-header" style="font-size: 1.3rem; margin-bottom: 1rem;">📝 Generated Content</h3>', unsafe_allow_html=True)
+
+# LinkedIn Posts Section
+st.markdown('<h4 class="section-subtitle" style="font-size: 1.1rem; margin: 1.5rem 0 1rem 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">📱 LinkedIn Posts</h4>', unsafe_allow_html=True)
+
+# Load LinkedIn posts from Supabase
+posts = load_posts_from_supabase()
+
+# Filter for LinkedIn posts
+linkedin_posts = [p for p in posts if p.get('post_type', 'linkedin') == 'linkedin']
+
+if not linkedin_posts:
+    st.info("No LinkedIn posts yet.")
+else:
+    # Create options for selectbox
+    post_options = []
+    for post in linkedin_posts:
+        episode_title = post.get('title', 'Unknown Episode')
+        created_at = post.get('created_at', '')
+        if created_at:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                date_str = created_at
+        else:
+            date_str = 'Unknown date'
         
-        selected_post_idx = st.selectbox("Select draft", range(len(post_options)), format_func=lambda x: post_options[x])
+        post_options.append(f"{episode_title} ({date_str})")
+    
+    selected_post_idx = st.selectbox("Select LinkedIn post", range(len(post_options)), format_func=lambda x: post_options[x])
+    
+    if selected_post_idx is not None and selected_post_idx < len(linkedin_posts):
+        selected_post = linkedin_posts[selected_post_idx]
+        episode_title = selected_post.get('title', 'Unknown Episode')
+        posts_content = selected_post.get('posts_content', 'No content available')
+        created_at = selected_post.get('created_at', '')
         
-        if selected_post_idx is not None and selected_post_idx < len(posts):
-            selected_post = posts[selected_post_idx]
-            episode_title = selected_post.get('title', 'Unknown Episode')
-            posts_content = selected_post.get('posts_content', 'No content available')
-            created_at = selected_post.get('created_at', '')
-            
-            if created_at:
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
-                    date_str = created_at
+        if created_at:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                date_str = created_at
+        else:
+            date_str = 'Unknown date'
+        
+        st.markdown(f"""
+        <div class="content-display">
+            <h4 style="margin: 0 0 0.25rem 0; color: #1e293b; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+            <p style="margin: 0; color: #1e293b; font-size: 0.75rem;">Saved: {date_str}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Split posts content and display each post separately
+        if posts_content and posts_content != 'No content available':
+            # Try both separators to handle different formats
+            if '---POST_BREAK---' in posts_content:
+                posts_list = posts_content.split('---POST_BREAK---')
             else:
-                date_str = 'Unknown date'
-            
-            st.markdown(f"""
-            <div class="content-display">
-                <h4 style="margin: 0 0 0.25rem 0; color: #f3f4f6; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
-                <p style="margin: 0; color: #9ca3af; font-size: 0.75rem;">Saved: {date_str}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Split posts content and display each post separately
-            if posts_content and posts_content != 'No content available':
                 posts_list = posts_content.split('---')
-                for i, post in enumerate(posts_list, 1):
-                    if post.strip():
-                        st.markdown(f"""
-                        <div style="background: #374151; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0; border-left: 3px solid #c4b5fd;">
-                            <h4 style="margin: 0 0 0.5rem 0; color: #c4b5fd; font-weight: 600; font-size: 0.9rem;">Post {i}</h4>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.markdown(post.strip())
-                        if i < len(posts_list):
-                            st.markdown("---")
-            else:
-                st.markdown("No content available")
+            
+            for i, post in enumerate(posts_list, 1):
+                if post.strip():
+                    st.markdown(f"""
+                    <div style="background: #374151; padding: 0.75rem; border-radius: 6px; margin: 0.5rem 0; border-left: 3px solid #c4b5fd;">
+                        <h4 style="margin: 0 0 0.5rem 0; color: #c4b5fd; font-weight: 600; font-size: 0.9rem;">Post {i}</h4>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(post.strip())
+                    if i < len(posts_list):
+                        st.markdown("---")
+        else:
+            st.markdown("No content available")
 
-# Run logs section removed for cleaner UI
+# Blog Posts Section
+st.markdown('<h4 class="section-subtitle" style="font-size: 1.1rem; margin: 1.5rem 0 1rem 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">📝 Blog Posts</h4>', unsafe_allow_html=True)
 
-# Professional footer
+# Load blog posts from Supabase
+posts = load_posts_from_supabase()
+
+# Filter for blog posts
+blog_posts = [p for p in posts if p.get('post_type', 'linkedin') == 'blog']
+
+if not blog_posts:
+    st.info("No blog posts yet.")
+else:
+    # Create options for selectbox
+    blog_options = []
+    for post in blog_posts:
+        episode_title = post.get('title', 'Unknown Episode')
+        created_at = post.get('created_at', '')
+        if created_at:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                date_str = created_at
+        else:
+            date_str = 'Unknown date'
+        
+        blog_options.append(f"{episode_title} ({date_str})")
+    
+    selected_blog_idx = st.selectbox("Select blog post", range(len(blog_options)), format_func=lambda x: blog_options[x])
+    
+    if selected_blog_idx is not None and selected_blog_idx < len(blog_posts):
+        selected_blog = blog_posts[selected_blog_idx]
+        episode_title = selected_blog.get('title', 'Unknown Episode')
+        blog_content = selected_blog.get('posts_content', 'No content available')
+        created_at = selected_blog.get('created_at', '')
+        
+        if created_at:
+            try:
+                from datetime import datetime
+                dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                date_str = created_at
+        else:
+            date_str = 'Unknown date'
+        
+        st.markdown(f"""
+        <div class="content-display">
+            <h4 style="margin: 0 0 0.25rem 0; color: #1e293b; font-weight: 600; font-size: 0.9rem;">{episode_title}</h4>
+            <p style="margin: 0; color: #1e293b; font-size: 0.75rem;">Saved: {date_str}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display blog content
+        if blog_content and blog_content != 'No content available':
+            # Try to parse as JSON first, then extract content
+            try:
+                import json
+                # Clean the content - remove any leading/trailing whitespace
+                cleaned_content = blog_content.strip()
+                
+                # Try to parse as JSON
+                blog_data = json.loads(cleaned_content)
+                
+                if isinstance(blog_data, dict) and 'content' in blog_data:
+                    # Display the parsed content as markdown
+                    st.markdown(blog_data['content'])
+                    
+                    # Also show title if available
+                    if 'title' in blog_data and blog_data['title']:
+                        st.markdown(f"**Title:** {blog_data['title']}")
+                    
+                    # Show excerpt if available
+                    if 'excerpt' in blog_data and blog_data['excerpt']:
+                        st.markdown(f"**Excerpt:** {blog_data['excerpt']}")
+                    
+                    # Show tags if available
+                    if 'tags' in blog_data and blog_data['tags']:
+                        tags_str = ", ".join(blog_data['tags'])
+                        st.markdown(f"**Tags:** {tags_str}")
+                else:
+                    # If it's not a dict with content, display as is
+                    st.markdown(blog_content)
+            except (json.JSONDecodeError, TypeError):
+                # If it's not valid JSON, display as plain text (which is what we want)
+                st.markdown(blog_content)
+        else:
+            st.markdown("No content available")
+
+st.markdown('</div>', unsafe_allow_html=True)  # Close right column
+st.markdown('</div>', unsafe_allow_html=True)  # Close two-column layout
+st.markdown('</div>', unsafe_allow_html=True)  # Close main-content
+
+# Footer
 st.markdown("""
-<div class="footer">
+<div style="text-align: center; padding: 2rem; color: #6b7280; font-size: 0.9rem;">
     🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
