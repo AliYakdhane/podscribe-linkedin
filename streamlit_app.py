@@ -319,7 +319,7 @@ st.markdown("""
         color: #1e293b !important;
     }
     
-    /* Fix select box styling for production */
+    /* Fix select box styling for production - comprehensive approach */
     .stSelectbox > div > div {
         background-color: #ffffff !important;
         border: 1px solid #d1d5db !important;
@@ -331,22 +331,161 @@ st.markdown("""
         color: #1e293b !important;
     }
     
-    /* Select box dropdown options */
-    .stSelectbox .stSelectbox-options {
+    /* Target all possible select dropdown containers */
+    div[data-baseweb="select"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    /* Target dropdown popup/modal */
+    div[data-baseweb="popover"] {
         background-color: #ffffff !important;
         border: 1px solid #d1d5db !important;
         border-radius: 6px !important;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
     
-    .stSelectbox .stSelectbox-option {
+    /* Target dropdown list items */
+    div[data-baseweb="menu"] {
         background-color: #ffffff !important;
-        color: #1e293b !important;
-        padding: 8px 12px !important;
     }
     
-    .stSelectbox .stSelectbox-option:hover {
+    div[data-baseweb="menu"] > ul {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    div[data-baseweb="menu"] > ul > li {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    div[data-baseweb="menu"] > ul > li:hover {
         background-color: #f3f4f6 !important;
+        color: #1e293b !important;
+    }
+    
+    /* Alternative selectors for different Streamlit versions */
+    .stSelectbox div[role="listbox"] {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    .stSelectbox div[role="listbox"] > div {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox div[role="listbox"] > div:hover {
+        background-color: #f3f4f6 !important;
+        color: #1e293b !important;
+    }
+    
+    /* Force light theme on any dropdown-like element */
+    [role="listbox"], [role="option"], [data-baseweb="menu"], [data-baseweb="popover"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    /* Target specific Streamlit dropdown classes */
+    .stSelectbox .dropdown-content,
+    .stSelectbox .dropdown-menu,
+    .stSelectbox .options-menu {
+        background-color: #ffffff !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 6px !important;
+    }
+    
+    .stSelectbox .dropdown-content > div,
+    .stSelectbox .dropdown-menu > div,
+    .stSelectbox .options-menu > div {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox .dropdown-content > div:hover,
+    .stSelectbox .dropdown-menu > div:hover,
+    .stSelectbox .options-menu > div:hover {
+        background-color: #f3f4f6 !important;
+        color: #1e293b !important;
+    }
+    
+    /* Ultra-aggressive targeting for production dropdowns */
+    *[class*="dropdown"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    *[class*="dropdown"] * {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    *[class*="dropdown"] *:hover {
+        background-color: #f3f4f6 !important;
+        color: #1e293b !important;
+    }
+    
+    /* Target any element with dropdown-like attributes */
+    *[aria-expanded="true"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    *[aria-expanded="true"] * {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Force light theme on any modal or popup */
+    *[role="dialog"], *[role="tooltip"], *[data-portal] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border: 1px solid #d1d5db !important;
+    }
+    
+    *[role="dialog"] *, *[role="tooltip"] *, *[data-portal] * {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Target Streamlit's specific dropdown implementation */
+    .stSelectbox [data-testid*="selectbox"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox [data-testid*="selectbox"] * {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Nuclear option - target everything that might be a dropdown */
+    body *[style*="position: absolute"],
+    body *[style*="position: fixed"],
+    body *[style*="z-index"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Override any dark theme classes that might be applied */
+    .dark, .dark-theme, [data-theme="dark"] {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    .dark *, .dark-theme *, [data-theme="dark"] * {
+        background-color: #ffffff !important;
         color: #1e293b !important;
     }
     
@@ -458,6 +597,61 @@ st.markdown("""
         border-color: #2563eb !important;
     }
 </style>
+
+<!-- JavaScript to force light theme on dynamically created dropdowns -->
+<script>
+    // Function to force light theme on dropdowns
+    function forceLightThemeOnDropdowns() {
+        // Target all possible dropdown elements
+        const selectors = [
+            '[data-baseweb="popover"]',
+            '[data-baseweb="menu"]',
+            '[role="listbox"]',
+            '[role="dialog"]',
+            '[data-portal]',
+            '.dropdown-content',
+            '.dropdown-menu',
+            '.options-menu'
+        ];
+        
+        selectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(element => {
+                element.style.backgroundColor = '#ffffff';
+                element.style.color = '#1e293b';
+                element.style.border = '1px solid #d1d5db';
+                
+                // Also style all children
+                const children = element.querySelectorAll('*');
+                children.forEach(child => {
+                    child.style.backgroundColor = '#ffffff';
+                    child.style.color = '#1e293b';
+                });
+            });
+        });
+    }
+    
+    // Run immediately
+    forceLightThemeOnDropdowns();
+    
+    // Run when DOM changes (for dynamically created dropdowns)
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                forceLightThemeOnDropdowns();
+            }
+        });
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+    
+    // Also run on window load and resize
+    window.addEventListener('load', forceLightThemeOnDropdowns);
+    window.addEventListener('resize', forceLightThemeOnDropdowns);
+</script>
 """, unsafe_allow_html=True)
 
 def hash_password(password: str) -> str:
