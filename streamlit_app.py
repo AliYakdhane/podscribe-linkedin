@@ -745,15 +745,6 @@ st.markdown("""
     🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
-            const url = new URL(window.location);
-            url.searchParams.set('session_id', savedSessionId);
-            window.location.href = url.toString();
-        }
-        </script>
-        """, unsafe_allow_html=True)
-        
-        login_form()
-        st.stop()
 else:
     # Fallback to old session management
     if not is_authenticated():
