@@ -745,58 +745,6 @@ st.markdown("""
     🎙️ <strong>Podcast AI Studio</strong> - Powered by FullCortex
 </div>
 """, unsafe_allow_html=True)
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-    }
-    
-    .status-error {
-        background: #ef4444;
-        color: white;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
-    }
-    
-    /* Content Display */
-    .content-display {
-        background: #374151;
-        padding: 0.5rem;
-        border-radius: 6px;
-        border-left: 3px solid #4f46e5;
-        margin: 0.25rem 0;
-    }
-    
-    /* Footer */
-    .footer {
-        text-align: center;
-        margin-top: 3rem;
-        padding: 2rem;
-        color: #718096;
-        font-size: 0.9rem;
-        border-top: 1px solid #e2e8f0;
-    }
-    
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .main-header {
-            padding: 2rem 1rem;
-        }
-        .metric-card {
-            padding: 1.5rem;
-        }
-    }
-    
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Custom button styling for See More/Less */
-    .stButton > button {
-        background: transparent !important;
-        border: none !important;
-        color: #3b82f6 !important;
         text-decoration: underline !important;
         font-size: 0.9rem !important;
         padding: 0.25rem 0.5rem !important;
