@@ -231,22 +231,39 @@ st.markdown("""
     }
     
     .content-excerpt {
-        color: #6b7280;
+        color: #6b7280 !important;
         font-style: italic;
         font-size: 0.95rem;
         margin: 0.5rem 0;
         padding: 0.75rem;
-        background-color: #f8fafc;
-        border-left: 3px solid #3b82f6;
+        background-color: #f8fafc !important;
+        border-left: 3px solid #3b82f6 !important;
         border-radius: 4px;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
     }
     
     .content-tags {
-        color: #059669;
+        color: #059669 !important;
         font-size: 0.875rem;
         margin: 0.75rem 0 0 0;
         padding: 0.5rem 0;
         border-top: 1px solid #e5e7eb;
+    }
+    
+    /* Additional excerpt styling for production compatibility */
+    div.content-excerpt,
+    .content-excerpt {
+        background-color: #f8fafc !important;
+        color: #6b7280 !important;
+        border-left: 3px solid #3b82f6 !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    /* Ensure text is visible in excerpt */
+    .content-excerpt * {
+        color: #6b7280 !important;
+        background-color: transparent !important;
     }
     
     /* Tabs */
@@ -646,6 +663,26 @@ st.markdown("""
                     child.style.backgroundColor = '#ffffff';
                     child.style.color = '#1e293b';
                 });
+            });
+        });
+        
+        // Fix excerpt styling in production
+        const excerptElements = document.querySelectorAll('.content-excerpt, div.content-excerpt');
+        excerptElements.forEach(element => {
+            element.style.backgroundColor = '#f8fafc';
+            element.style.color = '#6b7280';
+            element.style.borderLeft = '3px solid #3b82f6';
+            element.style.border = '1px solid #e5e7eb';
+            element.style.borderRadius = '4px';
+            element.style.padding = '0.75rem';
+            element.style.margin = '0.5rem 0';
+            element.style.fontStyle = 'italic';
+            
+            // Style all children of excerpt
+            const excerptChildren = element.querySelectorAll('*');
+            excerptChildren.forEach(child => {
+                child.style.color = '#6b7280';
+                child.style.backgroundColor = 'transparent';
             });
         });
     }
