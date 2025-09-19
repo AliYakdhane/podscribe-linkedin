@@ -230,6 +230,25 @@ st.markdown("""
         white-space: pre-wrap;
     }
     
+    .content-excerpt {
+        color: #6b7280;
+        font-style: italic;
+        font-size: 0.95rem;
+        margin: 0.5rem 0;
+        padding: 0.75rem;
+        background-color: #f8fafc;
+        border-left: 3px solid #3b82f6;
+        border-radius: 4px;
+    }
+    
+    .content-tags {
+        color: #059669;
+        font-size: 0.875rem;
+        margin: 0.75rem 0 0 0;
+        padding: 0.5rem 0;
+        border-top: 1px solid #e5e7eb;
+    }
+    
     /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         background: #f8fafc;
@@ -994,13 +1013,16 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
                         supabase_client = build_supabase_client(supabase_url, supabase_key)
                         
                         if supabase_client:
+                            # Store the entire blog post as JSON to preserve structure
+                            import json
+                            blog_content = json.dumps(blog_post)
                             store_posts(
                                 supabase_client,
                                 "blog_posts",  # Use separate table for blog posts
                                 selected_transcript['guid'],
                                 selected_transcript['title'],
                                 selected_transcript.get('published_at', ''),
-                                blog_post['content'],
+                                blog_content,
                                 "blog"
                             )
                             st.success("Blog post generated and saved!")
@@ -1303,7 +1325,35 @@ with col3:
             
             # Display blog content
             blog_content = selected_post['posts_content']
-            st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+            
+            # Try to parse if it's JSON-like content, otherwise display as-is
+            try:
+                import json
+                # Check if content looks like JSON
+                if blog_content.strip().startswith('{') and blog_content.strip().endswith('}'):
+                    parsed_content = json.loads(blog_content)
+                    # Display title if available
+                    if 'title' in parsed_content:
+                        st.markdown(f'<div class="content-title">{parsed_content["title"]}</div>', unsafe_allow_html=True)
+                    
+                    # Display excerpt if available
+                    if 'excerpt' in parsed_content:
+                        st.markdown(f'<div class="content-excerpt">{parsed_content["excerpt"]}</div>', unsafe_allow_html=True)
+                    
+                    # Display main content
+                    if 'content' in parsed_content:
+                        st.markdown(f'<div class="content-text">{parsed_content["content"]}</div>', unsafe_allow_html=True)
+                    
+                    # Display tags if available
+                    if 'tags' in parsed_content and parsed_content['tags']:
+                        tags_text = ', '.join(parsed_content['tags'])
+                        st.markdown(f'<div class="content-tags"><strong>Tags:</strong> {tags_text}</div>', unsafe_allow_html=True)
+                else:
+                    # Display as plain text
+                    st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+            except (json.JSONDecodeError, TypeError):
+                # If not JSON, display as plain text
+                st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
         
     else:
         st.info("No blog posts available. Generate some content first!")

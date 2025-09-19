@@ -44,6 +44,47 @@ class ContentGenerator:
         """Rough estimation of token count (1 token ≈ 4 characters)"""
         return len(text) // 4
 
+    def _extract_main_content(self, transcript: str) -> str:
+        """Extract main content from podcast transcript, skipping introductions"""
+        try:
+            # Use AI to identify and extract the main content
+            prompt = f"""
+            Analyze this podcast transcript and extract ONLY the main content/subject matter.
+            
+            Instructions:
+            - Skip any introductions, greetings, sponsor messages, or promotional content
+            - Skip "welcome to the show" type content
+            - Focus on the core discussion, insights, and main topics
+            - Remove repetitive phrases or filler content
+            - Keep the valuable, substantive content that would be useful for a blog post or LinkedIn post
+            
+            Return only the main content, cleaned up and focused on the key insights and discussions.
+            
+            Transcript:
+            {transcript}
+            """
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert at extracting the most valuable content from podcast transcripts. Focus on substance over introductions."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=4000
+            )
+            
+            extracted_content = response.choices[0].message.content or transcript
+            print(f"Extracted main content: {len(extracted_content)} chars (original: {len(transcript)} chars)")
+            return extracted_content
+            
+        except Exception as e:
+            print(f"Error extracting main content: {e}")
+            # Fallback: simple heuristic to skip first 20% of transcript
+            lines = transcript.split('\n')
+            skip_lines = max(1, len(lines) // 5)  # Skip first 20%
+            return '\n'.join(lines[skip_lines:])
+
     def _split_transcript_into_chunks(self, transcript: str, max_tokens_per_chunk: int = 6000) -> List[str]:
         """Split transcript into chunks that fit within token limits"""
         # Convert token limit to character limit (rough estimate)
@@ -108,8 +149,11 @@ class ContentGenerator:
         """Generate LinkedIn posts with specified voice/tone"""
         voice_config = self.voice_templates.get(voice, self.voice_templates["professional"])
         
+        # Extract main content from transcript, skipping introductions
+        main_content = self._extract_main_content(transcript)
+        
         prompt = f"""
-        Create {num_posts} LinkedIn posts based on this podcast transcript. 
+        Create {num_posts} LinkedIn posts based on this podcast content. 
         
         Voice and Tone Requirements:
         - Tone: {voice_config['tone']}
@@ -122,9 +166,10 @@ class ContentGenerator:
         - Make each post unique but related to the same topic
         - Include actionable insights or key takeaways
         - Use engaging hooks to start each post
+        - Focus on the core insights and main subject matter (introductions have been removed)
         
-        Transcript:
-        {transcript}
+        Podcast Content:
+        {main_content}
         
         Format: Return each post separated by "---POST_BREAK---"
         """
@@ -150,8 +195,11 @@ class ContentGenerator:
         """Generate a complete blog post with specified voice/tone"""
         voice_config = self.voice_templates.get(voice, self.voice_templates["professional"])
         
+        # Extract main content from transcript, skipping introductions
+        main_content = self._extract_main_content(transcript)
+        
         prompt = f"""
-        Create a comprehensive blog post based on this podcast transcript.
+        Create a comprehensive blog post based on this podcast content.
         
         Voice and Tone Requirements:
         - Tone: {voice_config['tone']}
@@ -166,9 +214,10 @@ class ContentGenerator:
         - Use bullet points or numbered lists where appropriate
         - Include actionable takeaways
         - Make it SEO-friendly with relevant keywords
+        - Focus on the core insights and main subject matter (introductions have been removed)
         
-        Transcript:
-        {transcript}
+        Podcast Content:
+        {main_content}
         
         Format: Return in this JSON structure:
         {{
@@ -232,13 +281,16 @@ class ContentGenerator:
     def generate_linkedin_posts_custom(self, transcript: str, custom_voice: str, custom_instructions: str = "", num_posts: int = 3) -> List[str]:
         """Generate LinkedIn posts with custom voice and tone description using chunking"""
         
+        # Extract main content from transcript, skipping introductions
+        main_content = self._extract_main_content(transcript)
+        
         # Check if transcript needs chunking
-        estimated_tokens = self._estimate_tokens(transcript)
-        print(f"Transcript estimated tokens: {estimated_tokens}")
+        estimated_tokens = self._estimate_tokens(main_content)
+        print(f"Main content estimated tokens: {estimated_tokens}")
         
         if estimated_tokens > 6000:  # Leave room for prompt and response
-            print("Transcript too large, using chunking approach...")
-            chunks = self._split_transcript_into_chunks(transcript, max_tokens_per_chunk=6000)
+            print("Main content too large, using chunking approach...")
+            chunks = self._split_transcript_into_chunks(main_content, max_tokens_per_chunk=6000)
             print(f"Split into {len(chunks)} chunks")
             
             all_posts = []
@@ -256,7 +308,7 @@ class ContentGenerator:
         else:
             # Single chunk processing
             return self._generate_linkedin_posts_from_chunk(
-                transcript, custom_voice, custom_instructions, num_posts, chunk_num=1, total_chunks=1
+                main_content, custom_voice, custom_instructions, num_posts, chunk_num=1, total_chunks=1
             )
 
     def _generate_linkedin_posts_from_chunk(self, transcript_chunk: str, custom_voice: str, custom_instructions: str, num_posts: int, chunk_num: int = 1, total_chunks: int = 1) -> List[str]:
@@ -306,13 +358,16 @@ class ContentGenerator:
                                  title: Optional[str] = None, word_count: int = 1000) -> Dict[str, str]:
         """Generate a complete blog post with custom voice and tone description using chunking"""
         
+        # Extract main content from transcript, skipping introductions
+        main_content = self._extract_main_content(transcript)
+        
         # Check if transcript needs chunking
-        estimated_tokens = self._estimate_tokens(transcript)
-        print(f"Blog post transcript estimated tokens: {estimated_tokens}")
+        estimated_tokens = self._estimate_tokens(main_content)
+        print(f"Blog post main content estimated tokens: {estimated_tokens}")
         
         if estimated_tokens > 6000:  # Leave room for prompt and response
-            print("Transcript too large for blog post, using chunking approach...")
-            chunks = self._split_transcript_into_chunks(transcript, max_tokens_per_chunk=6000)
+            print("Main content too large for blog post, using chunking approach...")
+            chunks = self._split_transcript_into_chunks(main_content, max_tokens_per_chunk=6000)
             print(f"Split into {len(chunks)} chunks")
             
             # Generate blog post sections from each chunk
@@ -338,7 +393,7 @@ class ContentGenerator:
         else:
             # Single chunk processing
             return self._generate_blog_post_from_chunk(
-                transcript, custom_voice, custom_instructions, title, word_count
+                main_content, custom_voice, custom_instructions, title, word_count
             )
 
     def _generate_blog_section_from_chunk(self, transcript_chunk: str, custom_voice: str, custom_instructions: str, chunk_num: int = 1, total_chunks: int = 1) -> str:
