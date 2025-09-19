@@ -28,6 +28,291 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = "5ca659c9fa66d91be324e790e225f488e0dca8e954b770afdb2691f553d9ccf6"  # "password" hashed with SHA-256
 SESSION_TIMEOUT = 3600  # 1 hour in seconds
 
+# Apply global CSS immediately for consistent theming across entire app
+st.markdown("""
+<style>
+    /* Global styles - applied to entire app including login */
+    .main {
+        padding-top: 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        background: #f8fafc !important;
+    }
+    
+    /* Force light theme on all elements */
+    .stApp {
+        background: #f8fafc !important;
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Top navigation bar */
+    .top-nav {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+        background: #ffffff;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        z-index: 999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .nav-title {
+        color: #1e293b;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    /* Main content area */
+    .main-content {
+        margin-top: 80px;
+        padding: 1rem;
+    }
+    
+    /* Status dashboard */
+    .status-dashboard {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .status-card {
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        flex: 1;
+        min-width: 200px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .status-title {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .status-value {
+        color: #1e293b;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    /* Content sections */
+    .content-section {
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+        color: #1e293b;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3b82f6;
+    }
+    
+    /* Form elements */
+    .transcript-selector, .generation-form {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-title {
+        color: #1e293b;
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: #3b82f6 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+        transition: all 0.2s !important;
+    }
+    
+    .stButton > button:hover {
+        background: #2563eb !important;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    /* Input fields */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea,
+    .stSelectbox > div > div > select {
+        background: #ffffff !important;
+        color: #1e293b !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 6px !important;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus,
+    .stSelectbox > div > div > select:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    }
+    
+    /* Selectbox text color fix */
+    .stSelectbox label,
+    .stSelectbox div[data-baseweb="select"] {
+        color: #1e293b !important;
+    }
+    
+    .stSelectbox div[data-baseweb="select"] > div {
+        color: #1e293b !important;
+        background: #ffffff !important;
+    }
+    
+    /* Content display */
+    .content-display {
+        background: #ffffff;
+        border-left: 4px solid #3b82f6;
+        padding: 0.5rem;
+        margin: 0.25rem 0;
+        border-radius: 0 6px 6px 0;
+    }
+    
+    .content-title {
+        color: #1e293b;
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .content-meta {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin: 0 0 0.5rem 0;
+    }
+    
+    .content-text {
+        color: #374151;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background: #f8fafc;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: #f1f5f9;
+        color: #64748b;
+        border-radius: 6px 6px 0 0;
+        margin-right: 0.25rem;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: #3b82f6 !important;
+        color: white !important;
+    }
+    
+    /* Login form styling - force light theme */
+    .stForm {
+        background: #ffffff !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 2rem !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+        margin: 2rem auto !important;
+        max-width: 400px !important;
+    }
+    
+    .stForm h3 {
+        color: #1e293b !important;
+        text-align: center !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    /* Force light theme on all text elements */
+    h1, h2, h3, h4, h5, h6, p, span, div, label {
+        color: #1e293b !important;
+    }
+    
+    /* Override any dark theme styles */
+    [data-testid="stApp"] {
+        background: #f8fafc !important;
+    }
+    
+    /* Ensure all containers have light background */
+    .element-container {
+        background: transparent !important;
+    }
+    
+    .block-container {
+        background: #f8fafc !important;
+    }
+    
+    /* Force light theme on login page specifically */
+    .stApp > div:first-child {
+        background: #f8fafc !important;
+    }
+    
+    /* Override Streamlit's default dark theme */
+    .stApp[data-theme="dark"] {
+        background: #f8fafc !important;
+    }
+    
+    .stApp[data-theme="dark"] .main {
+        background: #f8fafc !important;
+    }
+    
+    /* Force light theme on login page specifically */
+    .stApp > div:first-child {
+        background: #f8fafc !important;
+    }
+    
+    /* Override any remaining dark theme elements */
+    .stApp * {
+        color: #1e293b !important;
+    }
+    
+    /* Ensure login form has light theme */
+    .stForm, .stForm * {
+        background: #ffffff !important;
+        color: #1e293b !important;
+    }
+    
+    /* Force light theme on all text elements */
+    p, span, div, label, input, textarea, select {
+        color: #1e293b !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def hash_password(password: str) -> str:
     """Hash a password using SHA-256"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -333,204 +618,45 @@ else:
 
 # User is authenticated - continue with main app
 
-# Custom CSS for clean, structured design
-st.markdown("""
-<style>
-    /* Global styles */
-    .main {
-        padding-top: 1rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        background: #f8fafc;
-    }
-    
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Top navigation bar */
-    .top-nav {
-        position: fixed;
-        top: 0;
-        right: 0;
-        left: 0;
-        background: #ffffff;
-        padding: 0.75rem 1rem;
-        border-bottom: 2px solid #e2e8f0;
-        z-index: 999;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .nav-title {
-        color: #1e293b;
-        font-size: 1.2rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    
-    
-    /* Main content spacing */
-    .main-content {
-        margin-top: 80px; /* Space for fixed header */
-        padding: 0;
-    }
-    
-    /* Top Navigation Bar */
-    .top-nav {
-        background: #ffffff;
-        border-bottom: 2px solid #e2e8f0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        padding: 1rem 2rem;
-        margin: 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    
-    .nav-title {
-        color: #1e293b;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    .nav-logout-container {
-        display: flex;
-        align-items: center;
-    }
-    
-    .logout-btn {
-        background: #dc2626;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-    
-    .logout-btn:hover {
-        background: #b91c1c;
-    }
+# Duplicate CSS removed - using global CSS at top of file
 
-    /* Header styles */
-    .page-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 2rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    
-    .page-title {
-        font-size: 2rem;
-        font-weight: 700;
-        margin: 0 0 0.5rem 0;
-    }
-    
-    .page-subtitle {
-        font-size: 1rem;
-        margin: 0;
-        opacity: 0.9;
-    }
-    
-    /* Status dashboard */
-    .status-dashboard {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .status-card {
-        background: #ffffff;
-        padding: 1.5rem;
-        border-radius: 12px;
-        border: 2px solid #e2e8f0;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .status-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .status-title {
-        color: #64748b;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .status-value {
-        color: #1e293b;
-        font-size: 2rem;
-        font-weight: 700;
-        margin: 0;
-    }
-    
-    /* Content sections */
-    .content-section {
-        background: #ffffff;
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        border: 2px solid #e2e8f0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    }
-    
-    .section-title {
-        color: #1e293b;
-        font-size: 1.4rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 3px solid #3b82f6;
-    }
-    
-    /* Two column layout */
-    .two-column {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2rem;
-    }
-    
-    /* Transcript selector */
-    .transcript-selector {
-        background: #f8fafc;
-        padding: 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        border: 1px solid #e2e8f0;
-    }
-    
-    .selector-label {
-        color: #374151;
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Content generation form */
-    .generation-form {
+# Top Navigation Bar with Logout
+st.markdown("""
+<div class="top-nav">
+    <div class="nav-title">🎙️ Podcast AI Studio</div>
+    <div class="nav-logout-container">
+        <button class="nav-logout" onclick="logoutFunction()">🚪 Logout</button>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+# Main Content
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
+
+# Initialize session state
+if "last_run_output" not in st.session_state:
+    st.session_state["last_run_output"] = ""
+if "last_run_success" not in st.session_state:
+    st.session_state["last_run_success"] = False
+if "last_run_time" not in st.session_state:
+    st.session_state["last_run_time"] = ""
+
+# Load data from Supabase
+def load_transcripts_from_supabase():
+    """Load transcripts from Supabase and reassemble chunked content"""
+    try:
+        from src.storage import build_supabase_client
+        
+        # Check if Supabase is configured
+        supabase_url = st.secrets.get("SUPABASE_URL")
+        supabase_key = st.secrets.get("SUPABASE_SERVICE_ROLE_KEY") or st.secrets.get("SUPABASE_SERVICE_ROLE")
+        
+        if not supabase_url or not supabase_key:
+            return []
+        
+        # Build Supabase client
+        supabase_client = build_supabase_client(supabase_url, supabase_key)
+        
+        if not supabase_client:
         background: #f8fafc;
         padding: 1.5rem;
         border-radius: 12px;
