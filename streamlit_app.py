@@ -1167,17 +1167,17 @@ with col1:
             if len(transcript_content) > 1000:
                 if not st.session_state[content_key]:
                     preview = transcript_content[:1000] + "..."
-                    st.markdown(f'<div class="content-text">{preview}</div>', unsafe_allow_html=True)
+                    st.write(preview)
                     if st.button(f"See More", key=f"expand_{selected_transcript_idx}"):
                         st.session_state[content_key] = True
                         st.rerun()
                 else:
-                    st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+                    st.write(transcript_content)
                     if st.button(f"See Less", key=f"collapse_{selected_transcript_idx}"):
                         st.session_state[content_key] = False
                         st.rerun()
             else:
-                st.markdown(f'<div class="content-text">{transcript_content}</div>', unsafe_allow_html=True)
+                st.write(transcript_content)
         
     else:
         st.info("No transcripts available. Pull some episodes first!")
