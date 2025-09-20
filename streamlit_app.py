@@ -1312,6 +1312,8 @@ with col2:
         st.info("No LinkedIn posts available. Generate some content first!")
 
 with col3:
+    st.markdown('<h5 class="form-title">📝 Blog Posts</h5>', unsafe_allow_html=True)
+    
     # Organize posts by type
     blog_posts = [p for p in posts if p.get('post_type') == 'blog']
     
