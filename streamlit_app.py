@@ -1379,11 +1379,7 @@ with col3:
                     if title:
                         st.markdown(f"## {title}")
                     
-                    # Display excerpt
-                    if excerpt:
-                        st.markdown("**Excerpt:**")
-                        st.write(excerpt)
-                        st.markdown("---")
+                    # Skip excerpt display - removed per user request
                     
                     # Display content
                     if content:
@@ -1439,10 +1435,7 @@ with col3:
                 if title:
                     st.markdown(f"## {title}")
                 
-                if excerpt:
-                    st.markdown("**Excerpt:**")
-                    st.write(excerpt)
-                    st.markdown("---")
+                # Skip excerpt display - removed per user request
                 
                 if content:
                     st.write(content)
