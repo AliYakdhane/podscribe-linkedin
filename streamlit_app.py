@@ -1356,28 +1356,33 @@ with col3:
             st.markdown(f"**Saved:** {date_str}")
             st.markdown("---")
             
-            # Display blog content - try JSON parsing first, then regex fallback
+            # Display blog content - improved parsing with debugging
             blog_content = selected_post['posts_content']
             
             import json
             import re
             
+            # Debug: Print the raw content to understand the format
+            print(f"Raw blog content type: {type(blog_content)}")
+            print(f"Raw blog content preview: {str(blog_content)[:200]}...")
+            
             # Try to parse as JSON first
             try:
                 blog_data = json.loads(str(blog_content))
+                print("JSON parsing successful!")
                 
                 # Display extracted content from JSON
                 if isinstance(blog_data, dict):
                     title = blog_data.get('title', '')
                     content = blog_data.get('content', '')
-                    excerpt = blog_data.get('excerpt', '')
                     tags = blog_data.get('tags', [])
+                    
+                    print(f"Extracted title: {title[:50]}...")
+                    print(f"Extracted content length: {len(content)}")
                     
                     # Display title
                     if title:
                         st.markdown(f"## {title}")
-                    
-                    # Skip excerpt display - removed per user request
                     
                     # Display content
                     if content:
@@ -1391,12 +1396,12 @@ with col3:
                         tag_text = " • ".join(tags)
                         st.write(f"*{tag_text}*")
                 else:
-                    # If it's not a dict, show as text
+                    print("Blog data is not a dict, showing as text")
                     st.write(str(blog_data))
                     
-            except (json.JSONDecodeError, TypeError):
-                # JSON parsing failed, try regex extraction
-                print("JSON parsing failed, trying regex extraction...")
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"JSON parsing failed: {e}")
+                print("Trying regex extraction...")
                 
                 # Extract title
                 title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
@@ -1417,10 +1422,6 @@ with col3:
                     content = re.sub(r'(\w)\s+(\w)', r'\1\2', content)
                     content = re.sub(r'(\d+)\s+([a-zA-Z]+)', r'\1\2', content)
                 
-                # Extract excerpt
-                excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', str(blog_content))
-                excerpt = excerpt_match.group(1) if excerpt_match else None
-                
                 # Extract tags
                 tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', str(blog_content))
                 tags = []
@@ -1429,11 +1430,12 @@ with col3:
                     tag_matches = re.findall(r'"([^"]+)"', tags_str)
                     tags = tag_matches
                 
+                print(f"Regex extracted title: {title[:50] if title else 'None'}...")
+                print(f"Regex extracted content length: {len(content) if content else 0}")
+                
                 # Display the extracted content
                 if title:
                     st.markdown(f"## {title}")
-                
-                # Skip excerpt display - removed per user request
                 
                 if content:
                     st.write(content)
