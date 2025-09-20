@@ -1053,11 +1053,37 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
                             # Store the entire blog post as JSON to preserve structure
                             import json
                             blog_content = json.dumps(blog_post)
+                            
+                            # Extract the actual blog post title from the blog_post dictionary
+                            # The blog_post might have nested structure, so we need to extract the real title
+                            blog_title = blog_post.get('title', selected_transcript['title'])
+                            
+                            # If the title is "Blog Post from Podcast", try to extract the real title from content
+                            if blog_title == "Blog Post from Podcast" and 'content' in blog_post:
+                                content = blog_post['content']
+                                if isinstance(content, str):
+                                    try:
+                                        # Try to parse the content as JSON to get the nested title
+                                        import json
+                                        nested_data = json.loads(content)
+                                        if isinstance(nested_data, dict) and 'title' in nested_data:
+                                            blog_title = nested_data['title']
+                                            print(f"DEBUG: Extracted nested blog title: '{blog_title}'")
+                                    except:
+                                        # If JSON parsing fails, try regex extraction
+                                        import re
+                                        title_match = re.search(r'"title":\s*"([^"]+)"', content)
+                                        if title_match:
+                                            blog_title = title_match.group(1)
+                                            print(f"DEBUG: Extracted blog title via regex: '{blog_title}'")
+                            
+                            print(f"DEBUG: Final blog title to store: '{blog_title}'")
+                            
                             store_posts(
                                 supabase_client,
                                 "blog_posts",  # Use separate table for blog posts
                                 selected_transcript['guid'],
-                                selected_transcript['title'],
+                                blog_title,  # Use actual blog post title, not transcript title
                                 selected_transcript.get('published_at', ''),
                                 blog_content,
                                 "blog"
@@ -1273,8 +1299,12 @@ with col2:
             
             for j, individual_post in enumerate(individual_posts):
                 if individual_post.strip():
-                    # Use st.write instead of st.markdown to avoid dark sections
-                    st.write(individual_post.strip())
+                    # Display with consistent font styling
+                    st.markdown(f"""
+                    <div style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; line-height: 1.6; color: #262730; margin: 10px 0;">
+                        {individual_post.strip()}
+                    </div>
+                    """, unsafe_allow_html=True)
                     if j < len(individual_posts) - 1:
                         st.markdown('---')
         
@@ -1361,60 +1391,17 @@ with col3:
             import json
             import re
             
-            # Extract title from JSON content (handle nested JSON structure)
-            extracted_title = None
-            try:
-                blog_data = json.loads(str(blog_content))
-                if isinstance(blog_data, dict):
-                    # Check if there's a nested JSON in the content field
-                    content_field = blog_data.get('content', '')
-                    if content_field and isinstance(content_field, str):
-                        try:
-                            # Try to parse the nested JSON in content
-                            nested_data = json.loads(content_field)
-                            if isinstance(nested_data, dict):
-                                nested_title = nested_data.get('title', '')
-                                if nested_title:
-                                    extracted_title = nested_title
-                                    print(f"DEBUG: Found nested title: '{extracted_title}'")
-                        except:
-                            pass
-                    
-                    # If no nested title found, use the outer title
-                    if not extracted_title:
-                        extracted_title = blog_data.get('title', '')
-                        print(f"DEBUG: Using outer title: '{extracted_title}'")
-            except Exception as e:
-                print(f"DEBUG: JSON parsing failed: {e}")
-                # Try regex extraction as fallback - look for nested title
-                nested_title_match = re.search(r'"content":\s*"[^"]*"title":\s*"([^"]+)"', str(blog_content))
-                if nested_title_match:
-                    extracted_title = nested_title_match.group(1)
-                    print(f"DEBUG: Regex found nested title: '{extracted_title}'")
-                else:
-                    # Fallback to any title
-                    title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
-                    extracted_title = title_match.group(1) if title_match else None
-                    print(f"DEBUG: Regex fallback title: '{extracted_title}'")
+            # Use the database title directly (now that storage is fixed to save correct titles)
+            display_title = selected_post.get('title', 'Blog Post')
+            print(f"DEBUG: Using database title: '{display_title}'")
             
-            print(f"DEBUG: Final extracted title: '{extracted_title}'")
-            print(f"DEBUG: Database title: '{selected_post.get('title', 'No title')}'")
-            
-            # Display content-display section with extracted title (override database title)
-            if extracted_title:
-                st.markdown(f"""
-                <div class="content-display">
-                    <div class="content-title">{extracted_title}</div>
-                    <div class="content-meta">Saved: {date_str}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="content-display">
-                    <div class="content-title">Blog Post</div>
-                    <div class="content-meta">Saved: {date_str}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            # Display content-display section with actual blog title
+            st.markdown(f"""
+            <div class="content-display">
+                <div class="content-title">{display_title}</div>
+                <div class="content-meta">Saved: {date_str}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             st.markdown("---")
             
@@ -1433,11 +1420,15 @@ with col3:
                 cleaned_content = str(blog_content).strip()
                 blog_data = json.loads(cleaned_content)
                 print("JSON parsing successful!")
+                print(f"Blog data keys: {list(blog_data.keys())}")
                 
                 # Display extracted content from JSON
                 if isinstance(blog_data, dict):
                     content_field = blog_data.get('content', '')
                     tags = blog_data.get('tags', [])
+                    
+                    print(f"Content field type: {type(content_field)}")
+                    print(f"Content field preview: {str(content_field)[:100]}...")
                     
                     # Check if content is nested JSON
                     if content_field and isinstance(content_field, str):
@@ -1449,18 +1440,47 @@ with col3:
                                 if nested_tags:
                                     tags = nested_tags
                                 print(f"Found nested content: {len(content)} chars")
+                                print(f"Nested content preview: {content[:100]}...")
                             else:
                                 content = content_field
-                        except:
-                            content = content_field
+                                print("Nested data is not a dict, using content_field directly")
+                        except Exception as e:
+                            print(f"Nested JSON parsing failed: {e}")
+                            # Try regex extraction as fallback
+                            import re
+                            content_match = re.search(r'"content":\s*"((?:[^"\\]|\\.)*)"', content_field, re.DOTALL)
+                            if content_match:
+                                content = content_match.group(1)
+                                # Clean up escaped characters
+                                content = content.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\/', '/')
+                                print(f"Extracted content via regex: {len(content)} chars")
+                                print(f"Regex content preview: {content[:100]}...")
+                                
+                                # Also try to extract tags
+                                tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', content_field)
+                                if tags_match:
+                                    tags_str = tags_match.group(1)
+                                    tag_matches = re.findall(r'"([^"]+)"', tags_str)
+                                    if tag_matches:
+                                        tags = tag_matches
+                                        print(f"Extracted tags via regex: {tags}")
+                            else:
+                                content = content_field
+                                print("Regex extraction also failed, using content_field directly")
                     else:
                         content = content_field
+                        print("Using content_field directly")
                     
                     print(f"Final content length: {len(content)}")
+                    print(f"Final content preview: {content[:100]}...")
                     
-                    # Display content (title already displayed above)
-                    if content:
-                        st.write(content)
+                    # Display content (title already displayed above) with consistent font styling
+                    if content and content.strip():
+                        st.markdown(f"""
+                        <div style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; line-height: 1.6; color: #262730; margin: 10px 0;">
+                            {content}
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
                         st.write("No content available.")
                     
@@ -1507,9 +1527,13 @@ with col3:
                 print(f"Regex extracted title: {title[:50] if title else 'None'}...")
                 print(f"Regex extracted content length: {len(content) if content else 0}")
                 
-                # Display the extracted content (title already displayed above)
+                # Display the extracted content (title already displayed above) with consistent font styling
                 if content:
-                    st.write(content)
+                    st.markdown(f"""
+                    <div style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; line-height: 1.6; color: #262730; margin: 10px 0;">
+                        {content}
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.write("**Content extraction failed. Please try regenerating the blog post.**")
                 
