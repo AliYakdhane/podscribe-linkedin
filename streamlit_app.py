@@ -1358,65 +1358,101 @@ with col3:
             st.markdown(f"**Saved:** {date_str}")
             st.markdown("---")
             
-            # Display blog content - simplified and robust approach
+            # Display blog content - try JSON parsing first, then regex fallback
             blog_content = selected_post['posts_content']
             
-            # Always try to extract content using regex first (most reliable)
+            import json
             import re
             
-            # Extract title
-            title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
-            title = title_match.group(1) if title_match else None
-            
-            # Extract content - improved regex to handle complex JSON
-            content_match = re.search(r'"content":\s*"((?:[^"\\]|\\.)*)"', str(blog_content), re.DOTALL)
-            content = content_match.group(1) if content_match else None
-            if content:
-                # Clean up the content more thoroughly
-                content = (content.replace('\\"', '"')
-                          .replace('\\n', '\n')
-                          .replace('\\t', '\t')
-                          .replace('\\/', '/')
-                          .replace('\\\\', '\\'))
+            # Try to parse as JSON first
+            try:
+                blog_data = json.loads(str(blog_content))
                 
-                # Fix the weird character spacing issue (like "100billion,ispivotalforOpenAI")
-                import re
-                # Fix patterns where characters are separated by spaces
-                content = re.sub(r'(\w)\s+(\w)', r'\1\2', content)
-                # Fix patterns where numbers and letters are separated
-                content = re.sub(r'(\d+)\s+([a-zA-Z]+)', r'\1\2', content)
-            
-            # Extract excerpt
-            excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', str(blog_content))
-            excerpt = excerpt_match.group(1) if excerpt_match else None
-            
-            # Extract tags
-            tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', str(blog_content))
-            tags = []
-            if tags_match:
-                tags_str = tags_match.group(1)
-                tag_matches = re.findall(r'"([^"]+)"', tags_str)
-                tags = tag_matches
-            
-            # Display the extracted content - only show extracted parts, never raw JSON
-            if title:
-                st.markdown(f"## {title}")
-            
-            if excerpt:
-                st.markdown("**Excerpt:**")
-                st.write(excerpt)
-                st.markdown("---")
-            
-            if content:
-                st.write(content)
-            else:
-                # If content extraction failed, show a message instead of raw JSON
-                st.write("**Content extraction failed. Please try regenerating the blog post.**")
-            
-            if tags:
-                st.markdown("**Tags:**")
-                tag_text = " • ".join(tags)
-                st.write(f"*{tag_text}*")
+                # Display extracted content from JSON
+                if isinstance(blog_data, dict):
+                    title = blog_data.get('title', '')
+                    content = blog_data.get('content', '')
+                    excerpt = blog_data.get('excerpt', '')
+                    tags = blog_data.get('tags', [])
+                    
+                    # Display title
+                    if title:
+                        st.markdown(f"## {title}")
+                    
+                    # Display excerpt
+                    if excerpt:
+                        st.markdown("**Excerpt:**")
+                        st.write(excerpt)
+                        st.markdown("---")
+                    
+                    # Display content
+                    if content:
+                        st.write(content)
+                    else:
+                        st.write("No content available.")
+                    
+                    # Display tags
+                    if tags:
+                        st.markdown("**Tags:**")
+                        tag_text = " • ".join(tags)
+                        st.write(f"*{tag_text}*")
+                else:
+                    # If it's not a dict, show as text
+                    st.write(str(blog_data))
+                    
+            except (json.JSONDecodeError, TypeError):
+                # JSON parsing failed, try regex extraction
+                print("JSON parsing failed, trying regex extraction...")
+                
+                # Extract title
+                title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
+                title = title_match.group(1) if title_match else None
+                
+                # Extract content - improved regex to handle complex JSON
+                content_match = re.search(r'"content":\s*"((?:[^"\\]|\\.)*)"', str(blog_content), re.DOTALL)
+                content = content_match.group(1) if content_match else None
+                if content:
+                    # Clean up the content more thoroughly
+                    content = (content.replace('\\"', '"')
+                              .replace('\\n', '\n')
+                              .replace('\\t', '\t')
+                              .replace('\\/', '/')
+                              .replace('\\\\', '\\'))
+                    
+                    # Fix the weird character spacing issue
+                    content = re.sub(r'(\w)\s+(\w)', r'\1\2', content)
+                    content = re.sub(r'(\d+)\s+([a-zA-Z]+)', r'\1\2', content)
+                
+                # Extract excerpt
+                excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', str(blog_content))
+                excerpt = excerpt_match.group(1) if excerpt_match else None
+                
+                # Extract tags
+                tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', str(blog_content))
+                tags = []
+                if tags_match:
+                    tags_str = tags_match.group(1)
+                    tag_matches = re.findall(r'"([^"]+)"', tags_str)
+                    tags = tag_matches
+                
+                # Display the extracted content
+                if title:
+                    st.markdown(f"## {title}")
+                
+                if excerpt:
+                    st.markdown("**Excerpt:**")
+                    st.write(excerpt)
+                    st.markdown("---")
+                
+                if content:
+                    st.write(content)
+                else:
+                    st.write("**Content extraction failed. Please try regenerating the blog post.**")
+                
+                if tags:
+                    st.markdown("**Tags:**")
+                    tag_text = " • ".join(tags)
+                    st.write(f"*{tag_text}*")
         
     else:
         st.info("No blog posts available. Generate some content first!")
