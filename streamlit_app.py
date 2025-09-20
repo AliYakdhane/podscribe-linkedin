@@ -1474,13 +1474,9 @@ with col3:
                     print(f"Final content length: {len(content)}")
                     print(f"Final content preview: {content[:100]}...")
                     
-                    # Display content (title already displayed above) with consistent font styling
+                    # Display content (title already displayed above)
                     if content and content.strip():
-                        st.markdown(f"""
-                        <div style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; line-height: 1.6; color: #262730; margin: 10px 0;">
-                            {content}
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.write(content)
                     else:
                         st.write("No content available.")
                     
@@ -1527,13 +1523,9 @@ with col3:
                 print(f"Regex extracted title: {title[:50] if title else 'None'}...")
                 print(f"Regex extracted content length: {len(content) if content else 0}")
                 
-                # Display the extracted content (title already displayed above) with consistent font styling
+                # Display the extracted content (title already displayed above)
                 if content:
-                    st.markdown(f"""
-                    <div style="font-family: 'Source Sans Pro', sans-serif; font-size: 14px; line-height: 1.6; color: #262730; margin: 10px 0;">
-                        {content}
-                    </div>
-                    """, unsafe_allow_html=True)
+                    st.write(content)
                 else:
                     st.write("**Content extraction failed. Please try regenerating the blog post.**")
                 
