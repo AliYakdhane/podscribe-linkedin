@@ -1361,16 +1361,44 @@ with col3:
             import json
             import re
             
-            # Extract title from JSON content
+            # Extract title from JSON content (handle nested JSON structure)
             extracted_title = None
             try:
                 blog_data = json.loads(str(blog_content))
                 if isinstance(blog_data, dict):
-                    extracted_title = blog_data.get('title', '')
-            except:
-                # Try regex extraction as fallback
-                title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
-                extracted_title = title_match.group(1) if title_match else None
+                    # Check if there's a nested JSON in the content field
+                    content_field = blog_data.get('content', '')
+                    if content_field and isinstance(content_field, str):
+                        try:
+                            # Try to parse the nested JSON in content
+                            nested_data = json.loads(content_field)
+                            if isinstance(nested_data, dict):
+                                nested_title = nested_data.get('title', '')
+                                if nested_title:
+                                    extracted_title = nested_title
+                                    print(f"DEBUG: Found nested title: '{extracted_title}'")
+                        except:
+                            pass
+                    
+                    # If no nested title found, use the outer title
+                    if not extracted_title:
+                        extracted_title = blog_data.get('title', '')
+                        print(f"DEBUG: Using outer title: '{extracted_title}'")
+            except Exception as e:
+                print(f"DEBUG: JSON parsing failed: {e}")
+                # Try regex extraction as fallback - look for nested title
+                nested_title_match = re.search(r'"content":\s*"[^"]*"title":\s*"([^"]+)"', str(blog_content))
+                if nested_title_match:
+                    extracted_title = nested_title_match.group(1)
+                    print(f"DEBUG: Regex found nested title: '{extracted_title}'")
+                else:
+                    # Fallback to any title
+                    title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
+                    extracted_title = title_match.group(1) if title_match else None
+                    print(f"DEBUG: Regex fallback title: '{extracted_title}'")
+            
+            print(f"DEBUG: Final extracted title: '{extracted_title}'")
+            print(f"DEBUG: Database title: '{selected_post.get('title', 'No title')}'")
             
             # Display content-display section with extracted title (override database title)
             if extracted_title:
@@ -1399,7 +1427,7 @@ with col3:
             print(f"Raw blog content type: {type(blog_content)}")
             print(f"Raw blog content preview: {str(blog_content)[:200]}...")
             
-            # Try to parse as JSON first
+            # Try to parse as JSON first (handle nested structure)
             try:
                 # Clean the blog content before parsing
                 cleaned_content = str(blog_content).strip()
@@ -1408,10 +1436,27 @@ with col3:
                 
                 # Display extracted content from JSON
                 if isinstance(blog_data, dict):
-                    content = blog_data.get('content', '')
+                    content_field = blog_data.get('content', '')
                     tags = blog_data.get('tags', [])
                     
-                    print(f"Extracted content length: {len(content)}")
+                    # Check if content is nested JSON
+                    if content_field and isinstance(content_field, str):
+                        try:
+                            nested_data = json.loads(content_field)
+                            if isinstance(nested_data, dict):
+                                content = nested_data.get('content', '')
+                                nested_tags = nested_data.get('tags', [])
+                                if nested_tags:
+                                    tags = nested_tags
+                                print(f"Found nested content: {len(content)} chars")
+                            else:
+                                content = content_field
+                        except:
+                            content = content_field
+                    else:
+                        content = content_field
+                    
+                    print(f"Final content length: {len(content)}")
                     
                     # Display content (title already displayed above)
                     if content:
