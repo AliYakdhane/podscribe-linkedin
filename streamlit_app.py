@@ -1331,6 +1331,10 @@ with col3:
         if selected_blog_idx is not None:
             selected_post = blog_posts[selected_blog_idx]
             
+            # Debug: Print selected post data
+            print(f"Selected post title: {selected_post.get('title', 'No title')}")
+            print(f"Selected post keys: {list(selected_post.keys())}")
+            
             # Display selected blog post
             created_at = selected_post.get('created_at', '')
             published_at = selected_post.get('published_at', '')
@@ -1352,12 +1356,31 @@ with col3:
             else:
                 date_str = 'Unknown date'
             
-            # Simple header without duplicate title
-            st.markdown(f"**Saved:** {date_str}")
-            st.markdown("---")
-            
             # Display blog content - improved parsing with debugging
             blog_content = selected_post['posts_content']
+            
+            # Try to extract title from content first for the header
+            import json
+            import re
+            
+            extracted_title = None
+            try:
+                blog_data = json.loads(str(blog_content))
+                if isinstance(blog_data, dict):
+                    extracted_title = blog_data.get('title', '')
+            except:
+                # Try regex extraction
+                title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
+                extracted_title = title_match.group(1) if title_match else None
+            
+            # Display header with extracted title or fallback
+            if extracted_title:
+                st.markdown(f"## {extracted_title}")
+            else:
+                st.markdown("## Blog Post")
+            
+            st.markdown(f"**Saved:** {date_str}")
+            st.markdown("---")
             
             import json
             import re
@@ -1380,11 +1403,7 @@ with col3:
                     print(f"Extracted title: {title[:50]}...")
                     print(f"Extracted content length: {len(content)}")
                     
-                    # Display title
-                    if title:
-                        st.markdown(f"## {title}")
-                    
-                    # Display content
+                    # Display content (title already displayed above)
                     if content:
                         st.write(content)
                     else:
@@ -1433,10 +1452,7 @@ with col3:
                 print(f"Regex extracted title: {title[:50] if title else 'None'}...")
                 print(f"Regex extracted content length: {len(content) if content else 0}")
                 
-                # Display the extracted content
-                if title:
-                    st.markdown(f"## {title}")
-                
+                # Display the extracted content (title already displayed above)
                 if content:
                     st.write(content)
                 else:
