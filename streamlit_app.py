@@ -1391,32 +1391,36 @@ with col3:
             
             # Display the content properly
             if parsed_content and isinstance(parsed_content, dict):
-                # We have parsed content - display it cleanly
+                # We have parsed content - display it cleanly using containers
                 
                 # Title
                 if 'title' in parsed_content and parsed_content['title']:
-                    st.markdown(f"## {parsed_content['title']}")
+                    with st.container():
+                        st.markdown(f"## {parsed_content['title']}")
                 
                 # Excerpt
                 if 'excerpt' in parsed_content and parsed_content['excerpt']:
-                    st.markdown("**Excerpt:**")
-                    st.markdown(parsed_content['excerpt'])
-                    st.markdown("---")
+                    with st.container():
+                        st.markdown("**Excerpt:**")
+                        st.write(parsed_content['excerpt'])  # Use st.write instead of st.markdown
+                        st.markdown("---")
                 
                 # Main content
                 if 'content' in parsed_content and parsed_content['content']:
-                    st.markdown(parsed_content['content'])
+                    with st.container():
+                        st.write(parsed_content['content'])  # Use st.write instead of st.markdown
                 
                 # Tags
                 if 'tags' in parsed_content and parsed_content['tags']:
-                    st.markdown("**Tags:**")
-                    tag_text = " • ".join(parsed_content['tags'])
-                    st.markdown(f"*{tag_text}*")
+                    with st.container():
+                        st.markdown("**Tags:**")
+                        tag_text = " • ".join(parsed_content['tags'])
+                        st.write(f"*{tag_text}*")  # Use st.write instead of st.markdown
             else:
-                # Fallback - treat as plain text
+                # Fallback - treat as plain text using st.write
                 print("DEBUG: No valid parsed content, displaying as plain text")
                 st.markdown("**Blog Content:**")
-                st.markdown(str(blog_content))
+                st.write(str(blog_content))  # Use st.write instead of st.markdown
         
     else:
         st.info("No blog posts available. Generate some content first!")
