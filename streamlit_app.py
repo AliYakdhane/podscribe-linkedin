@@ -1360,77 +1360,66 @@ with col3:
             </div>
             """, unsafe_allow_html=True)
             
-            # Display blog content
+            # Display blog content - completely rewritten logic
             blog_content = selected_post['posts_content']
             
-            # Try to parse if it's JSON-like content, otherwise display as-is
+            # Simple approach: always try to parse as JSON first
+            parsed_content = None
+            
             try:
                 import json
                 
-                # Debug: Print what we're trying to parse
-                print(f"Debug: Blog content type: {type(blog_content)}")
-                print(f"Debug: Blog content preview: {str(blog_content)[:200]}...")
-                
-                # Check if content is already a dictionary
+                # If it's already a dict, use it
                 if isinstance(blog_content, dict):
-                    print("Debug: Content is already a dictionary")
                     parsed_content = blog_content
-                # Check if content looks like JSON
-                elif blog_content and isinstance(blog_content, str) and blog_content.strip().startswith('{'):
-                    print("Debug: Attempting to parse JSON...")
+                # If it's a string, try to parse it as JSON
+                elif isinstance(blog_content, str):
+                    # Try direct parsing first
                     try:
                         parsed_content = json.loads(blog_content)
-                        print(f"Debug: Successfully parsed JSON with keys: {list(parsed_content.keys())}")
-                    except json.JSONDecodeError as json_err:
-                        print(f"Debug: JSON decode error: {json_err}")
-                        # Try to extract JSON from the string if it's embedded
+                    except json.JSONDecodeError:
+                        # If that fails, try to find JSON in the string
                         import re
-                        json_match = re.search(r'\{.*\}', blog_content, re.DOTALL)
-                        if json_match:
+                        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+                        matches = re.findall(json_pattern, blog_content, re.DOTALL)
+                        if matches:
+                            # Try the longest match (most complete JSON)
+                            longest_match = max(matches, key=len)
                             try:
-                                parsed_content = json.loads(json_match.group())
-                                print(f"Debug: Successfully extracted and parsed JSON with keys: {list(parsed_content.keys())}")
-                            except:
-                                raise json_err
-                        else:
-                            raise json_err
-                else:
-                    print("Debug: Content doesn't look like JSON, displaying as plain text")
-                    # Display as plain text
-                    st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
-                    parsed_content = None
+                                parsed_content = json.loads(longest_match)
+                            except json.JSONDecodeError:
+                                pass
                 
-                # Display parsed content if we have it
-                if parsed_content:
-                    # Display title if available
-                    if 'title' in parsed_content:
-                        st.markdown(f'<div class="content-title">{parsed_content["title"]}</div>', unsafe_allow_html=True)
+                # If we successfully parsed JSON, display it properly
+                if parsed_content and isinstance(parsed_content, dict):
+                    # Display title
+                    if 'title' in parsed_content and parsed_content['title']:
+                        st.markdown(f"### {parsed_content['title']}")
                     
-                    # Display excerpt if available
-                    if 'excerpt' in parsed_content:
-                        # Use Streamlit's built-in components instead of custom HTML
-                        with st.container():
-                            st.markdown("**Excerpt:**")
-                            st.info(parsed_content["excerpt"])
+                    # Display excerpt in a clean way
+                    if 'excerpt' in parsed_content and parsed_content['excerpt']:
+                        st.markdown("**Excerpt:**")
+                        st.markdown(parsed_content['excerpt'])
+                        st.markdown("---")
                     
                     # Display main content
-                    if 'content' in parsed_content:
-                        st.markdown(f'<div class="content-text">{parsed_content["content"]}</div>', unsafe_allow_html=True)
+                    if 'content' in parsed_content and parsed_content['content']:
+                        st.markdown(parsed_content['content'])
                     
-                    # Display tags if available
+                    # Display tags
                     if 'tags' in parsed_content and parsed_content['tags']:
-                        with st.container():
-                            st.markdown("**Tags:**")
-                            # Use Streamlit's built-in tag display
-                            cols = st.columns(min(len(parsed_content['tags']), 5))
-                            for i, tag in enumerate(parsed_content['tags'][:5]):
-                                with cols[i]:
-                                    st.markdown(f"`{tag}`")
-            except (json.JSONDecodeError, TypeError) as e:
-                print(f"Debug: JSON parsing failed with error: {e}")
-                print(f"Debug: Content that failed to parse: {str(blog_content)[:500]}")
-                # If not JSON, display as plain text
-                st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+                        st.markdown("**Tags:**")
+                        tag_text = " • ".join(parsed_content['tags'])
+                        st.markdown(f"*{tag_text}*")
+                        
+                else:
+                    # If parsing failed, display as plain text
+                    st.markdown(blog_content)
+                    
+            except Exception as e:
+                # Final fallback - display raw content
+                st.markdown("**Blog Content:**")
+                st.markdown(str(blog_content))
         
     else:
         st.info("No blog posts available. Generate some content first!")
