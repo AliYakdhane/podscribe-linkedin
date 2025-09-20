@@ -1358,136 +1358,55 @@ with col3:
             st.markdown(f"**Saved:** {date_str}")
             st.markdown("---")
             
-            # Display blog content - fixed approach
+            # Display blog content - simplified and robust approach
             blog_content = selected_post['posts_content']
             
-            # Debug what we're getting
-            print(f"DEBUG: Blog content type: {type(blog_content)}")
-            print(f"DEBUG: Blog content preview: {str(blog_content)[:200]}...")
+            # Always try to extract content using regex first (most reliable)
+            import re
             
-            # Try to parse JSON content with multiple strategies
-            parsed_content = None
+            # Extract title
+            title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
+            title = title_match.group(1) if title_match else None
             
-            if isinstance(blog_content, dict):
-                # Already parsed
-                parsed_content = blog_content
-                print("DEBUG: Content is already a dictionary")
-            elif isinstance(blog_content, str):
-                import json
-                import re
-                
-                # Strategy 1: Direct JSON parsing
-                try:
-                    parsed_content = json.loads(blog_content.strip())
-                    print(f"DEBUG: Strategy 1 - Direct parsing succeeded with keys: {list(parsed_content.keys())}")
-                except json.JSONDecodeError as e:
-                    print(f"DEBUG: Strategy 1 - Direct parsing failed: {e}")
-                    
-                    # Strategy 2: Extract JSON from string using regex
-                    try:
-                        # More robust regex to find JSON
-                        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-                        matches = re.findall(json_pattern, blog_content, re.DOTALL)
-                        if matches:
-                            # Try the longest match
-                            longest_match = max(matches, key=len)
-                            parsed_content = json.loads(longest_match)
-                            print(f"DEBUG: Strategy 2 - Regex extraction succeeded with keys: {list(parsed_content.keys())}")
-                    except Exception as e2:
-                        print(f"DEBUG: Strategy 2 - Regex extraction failed: {e2}")
-                        
-                        # Strategy 3: Try to clean and parse
-                        try:
-                            # Remove any extra text before/after JSON
-                            cleaned_content = blog_content.strip()
-                            if cleaned_content.startswith('{') and cleaned_content.endswith('}'):
-                                parsed_content = json.loads(cleaned_content)
-                                print(f"DEBUG: Strategy 3 - Clean parsing succeeded with keys: {list(parsed_content.keys())}")
-                        except Exception as e3:
-                            print(f"DEBUG: Strategy 3 - Clean parsing failed: {e3}")
-                            print(f"DEBUG: All parsing strategies failed. Content: {blog_content[:500]}")
+            # Extract content - handle multiline content better
+            content_match = re.search(r'"content":\s*"((?:[^"\\]|\\.)*)"', str(blog_content), re.DOTALL)
+            content = content_match.group(1) if content_match else None
+            if content:
+                # Clean up the content
+                content = content.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\/', '/')
             
-            # Display the content properly
-            if parsed_content and isinstance(parsed_content, dict):
-                # We have parsed content - display it cleanly using containers
-                
-                # Title
-                if 'title' in parsed_content and parsed_content['title']:
-                    with st.container():
-                        st.markdown(f"## {parsed_content['title']}")
-                
-                # Excerpt
-                if 'excerpt' in parsed_content and parsed_content['excerpt']:
-                    with st.container():
-                        st.markdown("**Excerpt:**")
-                        st.write(parsed_content['excerpt'])  # Use st.write instead of st.markdown
-                        st.markdown("---")
-                
-                # Main content
-                if 'content' in parsed_content and parsed_content['content']:
-                    with st.container():
-                        st.write(parsed_content['content'])  # Use st.write instead of st.markdown
-                
-                # Tags
-                if 'tags' in parsed_content and parsed_content['tags']:
-                    with st.container():
-                        st.markdown("**Tags:**")
-                        tag_text = " • ".join(parsed_content['tags'])
-                        st.write(f"*{tag_text}*")  # Use st.write instead of st.markdown
-            else:
-                # Final fallback - try to manually extract content from JSON string
-                print("DEBUG: No valid parsed content, trying manual extraction")
-                try:
-                    # Try to extract title, content, excerpt manually using string operations
-                    content_str = str(blog_content)
-                    
-                    # Extract title
-                    title_match = re.search(r'"title":\s*"([^"]+)"', content_str)
-                    title = title_match.group(1) if title_match else None
-                    
-                    # Extract content
-                    content_match = re.search(r'"content":\s*"([^"]+(?:\\.[^"]*)*)"', content_str, re.DOTALL)
-                    content = content_match.group(1) if content_match else None
-                    if content:
-                        # Unescape the content
-                        content = content.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t')
-                    
-                    # Extract excerpt
-                    excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', content_str)
-                    excerpt = excerpt_match.group(1) if excerpt_match else None
-                    
-                    # Extract tags
-                    tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', content_str)
-                    tags = []
-                    if tags_match:
-                        tags_str = tags_match.group(1)
-                        tag_matches = re.findall(r'"([^"]+)"', tags_str)
-                        tags = tag_matches
-                    
-                    # Display extracted content
-                    if title:
-                        st.markdown(f"## {title}")
-                    
-                    if excerpt:
-                        st.markdown("**Excerpt:**")
-                        st.write(excerpt)
-                        st.markdown("---")
-                    
-                    if content:
-                        st.write(content)
-                    
-                    if tags:
-                        st.markdown("**Tags:**")
-                        tag_text = " • ".join(tags)
-                        st.write(f"*{tag_text}*")
-                        
-                    print(f"DEBUG: Manual extraction succeeded - Title: {title is not None}, Content: {content is not None}, Excerpt: {excerpt is not None}, Tags: {len(tags)}")
-                    
-                except Exception as e:
-                    print(f"DEBUG: Manual extraction also failed: {e}")
-                    # Ultimate fallback - display raw content
-                    st.markdown("**Blog Content:**")
-                    st.write(str(blog_content))  # Use st.write instead of st.markdown
+            # Extract excerpt
+            excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', str(blog_content))
+            excerpt = excerpt_match.group(1) if excerpt_match else None
+            
+            # Extract tags
+            tags_match = re.search(r'"tags":\s*\[([^\]]+)\]', str(blog_content))
+            tags = []
+            if tags_match:
+                tags_str = tags_match.group(1)
+                tag_matches = re.findall(r'"([^"]+)"', tags_str)
+                tags = tag_matches
+            
+            # Display the extracted content
+            if title:
+                st.markdown(f"## {title}")
+            
+            if excerpt:
+                st.markdown("**Excerpt:**")
+                st.write(excerpt)
+                st.markdown("---")
+            
+            if content:
+                st.write(content)
+            elif blog_content:
+                # If content extraction failed, show raw content as fallback
+                st.write("**Raw Content:**")
+                st.write(str(blog_content))
+            
+            if tags:
+                st.markdown("**Tags:**")
+                tag_text = " • ".join(tags)
+                st.write(f"*{tag_text}*")
         
     else:
         st.info("No blog posts available. Generate some content first!")
