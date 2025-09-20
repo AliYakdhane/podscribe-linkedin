@@ -1353,71 +1353,68 @@ with col3:
             else:
                 date_str = 'Unknown date'
             
-            st.markdown(f"""
-            <div class="content-display">
-                <div class="content-title">{selected_post['title']}</div>
-                <div class="content-meta">Saved: {date_str}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            # Simple header without duplicate title
+            st.markdown(f"**Saved:** {date_str}")
+            st.markdown("---")
             
-            # Display blog content - completely rewritten logic
+            # Display blog content - fixed approach
             blog_content = selected_post['posts_content']
             
-            # Simple approach: always try to parse as JSON first
+            # Debug what we're getting
+            print(f"DEBUG: Blog content type: {type(blog_content)}")
+            print(f"DEBUG: Blog content preview: {str(blog_content)[:100]}...")
+            
+            # Try to parse JSON content
             parsed_content = None
             
-            try:
-                import json
+            if isinstance(blog_content, dict):
+                # Already parsed
+                parsed_content = blog_content
+            elif isinstance(blog_content, str):
+                # Try to parse JSON
+                try:
+                    import json
+                    parsed_content = json.loads(blog_content)
+                    print(f"DEBUG: Successfully parsed JSON with keys: {list(parsed_content.keys())}")
+                except json.JSONDecodeError as e:
+                    print(f"DEBUG: JSON parsing failed: {e}")
+                    # Try to extract JSON from the string
+                    import re
+                    # Look for JSON object in the string
+                    json_match = re.search(r'\{.*\}', blog_content, re.DOTALL)
+                    if json_match:
+                        try:
+                            parsed_content = json.loads(json_match.group())
+                            print(f"DEBUG: Extracted and parsed JSON with keys: {list(parsed_content.keys())}")
+                        except:
+                            pass
+            
+            # Display the content properly
+            if parsed_content and isinstance(parsed_content, dict):
+                # We have parsed content - display it cleanly
                 
-                # If it's already a dict, use it
-                if isinstance(blog_content, dict):
-                    parsed_content = blog_content
-                # If it's a string, try to parse it as JSON
-                elif isinstance(blog_content, str):
-                    # Try direct parsing first
-                    try:
-                        parsed_content = json.loads(blog_content)
-                    except json.JSONDecodeError:
-                        # If that fails, try to find JSON in the string
-                        import re
-                        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-                        matches = re.findall(json_pattern, blog_content, re.DOTALL)
-                        if matches:
-                            # Try the longest match (most complete JSON)
-                            longest_match = max(matches, key=len)
-                            try:
-                                parsed_content = json.loads(longest_match)
-                            except json.JSONDecodeError:
-                                pass
+                # Title
+                if 'title' in parsed_content and parsed_content['title']:
+                    st.markdown(f"## {parsed_content['title']}")
                 
-                # If we successfully parsed JSON, display it properly
-                if parsed_content and isinstance(parsed_content, dict):
-                    # Display title
-                    if 'title' in parsed_content and parsed_content['title']:
-                        st.markdown(f"### {parsed_content['title']}")
-                    
-                    # Display excerpt in a clean way
-                    if 'excerpt' in parsed_content and parsed_content['excerpt']:
-                        st.markdown("**Excerpt:**")
-                        st.markdown(parsed_content['excerpt'])
-                        st.markdown("---")
-                    
-                    # Display main content
-                    if 'content' in parsed_content and parsed_content['content']:
-                        st.markdown(parsed_content['content'])
-                    
-                    # Display tags
-                    if 'tags' in parsed_content and parsed_content['tags']:
-                        st.markdown("**Tags:**")
-                        tag_text = " • ".join(parsed_content['tags'])
-                        st.markdown(f"*{tag_text}*")
-                        
-                else:
-                    # If parsing failed, display as plain text
-                    st.markdown(blog_content)
-                    
-            except Exception as e:
-                # Final fallback - display raw content
+                # Excerpt
+                if 'excerpt' in parsed_content and parsed_content['excerpt']:
+                    st.markdown("**Excerpt:**")
+                    st.markdown(parsed_content['excerpt'])
+                    st.markdown("---")
+                
+                # Main content
+                if 'content' in parsed_content and parsed_content['content']:
+                    st.markdown(parsed_content['content'])
+                
+                # Tags
+                if 'tags' in parsed_content and parsed_content['tags']:
+                    st.markdown("**Tags:**")
+                    tag_text = " • ".join(parsed_content['tags'])
+                    st.markdown(f"*{tag_text}*")
+            else:
+                # Fallback - treat as plain text
+                print("DEBUG: No valid parsed content, displaying as plain text")
                 st.markdown("**Blog Content:**")
                 st.markdown(str(blog_content))
         
