@@ -1368,12 +1368,23 @@ with col3:
             title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
             title = title_match.group(1) if title_match else None
             
-            # Extract content - handle multiline content better
+            # Extract content - improved regex to handle complex JSON
             content_match = re.search(r'"content":\s*"((?:[^"\\]|\\.)*)"', str(blog_content), re.DOTALL)
             content = content_match.group(1) if content_match else None
             if content:
-                # Clean up the content
-                content = content.replace('\\"', '"').replace('\\n', '\n').replace('\\t', '\t').replace('\\/', '/')
+                # Clean up the content more thoroughly
+                content = (content.replace('\\"', '"')
+                          .replace('\\n', '\n')
+                          .replace('\\t', '\t')
+                          .replace('\\/', '/')
+                          .replace('\\\\', '\\'))
+                
+                # Fix the weird character spacing issue (like "100billion,ispivotalforOpenAI")
+                import re
+                # Fix patterns where characters are separated by spaces
+                content = re.sub(r'(\w)\s+(\w)', r'\1\2', content)
+                # Fix patterns where numbers and letters are separated
+                content = re.sub(r'(\d+)\s+([a-zA-Z]+)', r'\1\2', content)
             
             # Extract excerpt
             excerpt_match = re.search(r'"excerpt":\s*"([^"]+)"', str(blog_content))
@@ -1387,7 +1398,7 @@ with col3:
                 tag_matches = re.findall(r'"([^"]+)"', tags_str)
                 tags = tag_matches
             
-            # Display the extracted content
+            # Display the extracted content - only show extracted parts, never raw JSON
             if title:
                 st.markdown(f"## {title}")
             
@@ -1398,10 +1409,9 @@ with col3:
             
             if content:
                 st.write(content)
-            elif blog_content:
-                # If content extraction failed, show raw content as fallback
-                st.write("**Raw Content:**")
-                st.write(str(blog_content))
+            else:
+                # If content extraction failed, show a message instead of raw JSON
+                st.write("**Content extraction failed. Please try regenerating the blog post.**")
             
             if tags:
                 st.markdown("**Tags:**")
