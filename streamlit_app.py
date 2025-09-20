@@ -1273,7 +1273,8 @@ with col2:
             
             for j, individual_post in enumerate(individual_posts):
                 if individual_post.strip():
-                    st.markdown(f'<div class="content-text">{individual_post.strip()}</div>', unsafe_allow_html=True)
+                    # Use st.write instead of st.markdown to avoid dark sections
+                    st.write(individual_post.strip())
                     if j < len(individual_posts) - 1:
                         st.markdown('---')
         
