@@ -1366,9 +1366,42 @@ with col3:
             # Try to parse if it's JSON-like content, otherwise display as-is
             try:
                 import json
+                
+                # Debug: Print what we're trying to parse
+                print(f"Debug: Blog content type: {type(blog_content)}")
+                print(f"Debug: Blog content preview: {str(blog_content)[:200]}...")
+                
+                # Check if content is already a dictionary
+                if isinstance(blog_content, dict):
+                    print("Debug: Content is already a dictionary")
+                    parsed_content = blog_content
                 # Check if content looks like JSON
-                if blog_content.strip().startswith('{') and blog_content.strip().endswith('}'):
-                    parsed_content = json.loads(blog_content)
+                elif blog_content and isinstance(blog_content, str) and blog_content.strip().startswith('{'):
+                    print("Debug: Attempting to parse JSON...")
+                    try:
+                        parsed_content = json.loads(blog_content)
+                        print(f"Debug: Successfully parsed JSON with keys: {list(parsed_content.keys())}")
+                    except json.JSONDecodeError as json_err:
+                        print(f"Debug: JSON decode error: {json_err}")
+                        # Try to extract JSON from the string if it's embedded
+                        import re
+                        json_match = re.search(r'\{.*\}', blog_content, re.DOTALL)
+                        if json_match:
+                            try:
+                                parsed_content = json.loads(json_match.group())
+                                print(f"Debug: Successfully extracted and parsed JSON with keys: {list(parsed_content.keys())}")
+                            except:
+                                raise json_err
+                        else:
+                            raise json_err
+                else:
+                    print("Debug: Content doesn't look like JSON, displaying as plain text")
+                    # Display as plain text
+                    st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
+                    parsed_content = None
+                
+                # Display parsed content if we have it
+                if parsed_content:
                     # Display title if available
                     if 'title' in parsed_content:
                         st.markdown(f'<div class="content-title">{parsed_content["title"]}</div>', unsafe_allow_html=True)
@@ -1393,10 +1426,9 @@ with col3:
                             for i, tag in enumerate(parsed_content['tags'][:5]):
                                 with cols[i]:
                                     st.markdown(f"`{tag}`")
-                else:
-                    # Display as plain text
-                    st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
-            except (json.JSONDecodeError, TypeError):
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"Debug: JSON parsing failed with error: {e}")
+                print(f"Debug: Content that failed to parse: {str(blog_content)[:500]}")
                 # If not JSON, display as plain text
                 st.markdown(f'<div class="content-text">{blog_content}</div>', unsafe_allow_html=True)
         
