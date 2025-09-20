@@ -1368,18 +1368,30 @@ with col3:
                 blog_data = json.loads(str(blog_content))
                 if isinstance(blog_data, dict):
                     extracted_title = blog_data.get('title', '')
-            except:
+                    print(f"JSON parsing successful! Extracted title: {extracted_title}")
+            except Exception as e:
+                print(f"JSON parsing failed: {e}")
                 # Try regex extraction
                 title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
                 extracted_title = title_match.group(1) if title_match else None
+                print(f"Regex extraction result: {extracted_title}")
             
-            # Display header with extracted title or fallback
+            # Display content-display section with extracted title (override database title)
             if extracted_title:
-                st.markdown(f"## {extracted_title}")
+                st.markdown(f"""
+                <div class="content-display">
+                    <div class="content-title">{extracted_title}</div>
+                    <div class="content-meta">Saved: {date_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown("## Blog Post")
+                st.markdown(f"""
+                <div class="content-display">
+                    <div class="content-title">Blog Post</div>
+                    <div class="content-meta">Saved: {date_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
             
-            st.markdown(f"**Saved:** {date_str}")
             st.markdown("---")
             
             import json
@@ -1391,7 +1403,9 @@ with col3:
             
             # Try to parse as JSON first
             try:
-                blog_data = json.loads(str(blog_content))
+                # Clean the blog content before parsing
+                cleaned_content = str(blog_content).strip()
+                blog_data = json.loads(cleaned_content)
                 print("JSON parsing successful!")
                 
                 # Display extracted content from JSON
@@ -1416,7 +1430,7 @@ with col3:
                         st.write(f"*{tag_text}*")
                 else:
                     print("Blog data is not a dict, showing as text")
-                    st.write(str(blog_data))
+                    st.write("Content format error: Expected dictionary structure.")
                     
             except (json.JSONDecodeError, TypeError) as e:
                 print(f"JSON parsing failed: {e}")
