@@ -1356,25 +1356,21 @@ with col3:
             else:
                 date_str = 'Unknown date'
             
-            # Display blog content - improved parsing with debugging
+            # Get blog content and extract title first
             blog_content = selected_post['posts_content']
-            
-            # Try to extract title from content first for the header
             import json
             import re
             
+            # Extract title from JSON content
             extracted_title = None
             try:
                 blog_data = json.loads(str(blog_content))
                 if isinstance(blog_data, dict):
                     extracted_title = blog_data.get('title', '')
-                    print(f"JSON parsing successful! Extracted title: {extracted_title}")
-            except Exception as e:
-                print(f"JSON parsing failed: {e}")
-                # Try regex extraction
+            except:
+                # Try regex extraction as fallback
                 title_match = re.search(r'"title":\s*"([^"]+)"', str(blog_content))
                 extracted_title = title_match.group(1) if title_match else None
-                print(f"Regex extraction result: {extracted_title}")
             
             # Display content-display section with extracted title (override database title)
             if extracted_title:
@@ -1394,6 +1390,8 @@ with col3:
             
             st.markdown("---")
             
+            # Display blog content - parse and display properly
+            
             import json
             import re
             
@@ -1410,11 +1408,9 @@ with col3:
                 
                 # Display extracted content from JSON
                 if isinstance(blog_data, dict):
-                    title = blog_data.get('title', '')
                     content = blog_data.get('content', '')
                     tags = blog_data.get('tags', [])
                     
-                    print(f"Extracted title: {title[:50]}...")
                     print(f"Extracted content length: {len(content)}")
                     
                     # Display content (title already displayed above)
