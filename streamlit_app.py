@@ -943,6 +943,108 @@ st.markdown("""
 </div>
 """.format(len(transcripts), linkedin_posts_count, blog_posts_count), unsafe_allow_html=True)
 
+# Podcast Selection Section
+st.markdown('<h4 class="section-title">🎙️ Podcast Selection</h4>', unsafe_allow_html=True)
+
+if transcripts:
+    # Create podcast options with formatted dates
+    podcast_options = []
+    for i, transcript in enumerate(transcripts):
+        # Get the date (prefer published_at, fallback to created_at)
+        date_to_use = transcript.get('published_at') or transcript.get('created_at', '')
+        
+        if date_to_use:
+            try:
+                from datetime import datetime
+                if 'T' in date_to_use:
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                else:
+                    dt = datetime.fromisoformat(date_to_use)
+                # Format as Month - Day - Year
+                formatted_date = dt.strftime('%B - %d - %Y')
+            except Exception:
+                formatted_date = 'Unknown date'
+        else:
+            formatted_date = 'Unknown date'
+        
+        # Create display option
+        title = transcript['title']
+        if len(title) > 60:
+            title = title[:57] + "..."
+        
+        podcast_options.append(f"{title} ({formatted_date})")
+    
+    # Podcast selector
+    selected_podcast_idx = st.selectbox(
+        "Select a podcast to view:",
+        range(len(podcast_options)),
+        format_func=lambda x: podcast_options[x],
+        key="podcast_selector_main"
+    )
+    
+    if selected_podcast_idx is not None:
+        selected_podcast = transcripts[selected_podcast_idx]
+        
+        # Get and format the date for display
+        date_to_use = selected_podcast.get('published_at') or selected_podcast.get('created_at', '')
+        
+        if date_to_use:
+            try:
+                from datetime import datetime
+                if 'T' in date_to_use:
+                    if date_to_use.endswith('Z'):
+                        dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
+                    else:
+                        dt = datetime.fromisoformat(date_to_use)
+                else:
+                    dt = datetime.fromisoformat(date_to_use)
+                # Format as Month - Day - Year
+                formatted_date = dt.strftime('%B - %d - %Y')
+            except Exception:
+                formatted_date = date_to_use or 'Unknown date'
+        else:
+            formatted_date = 'Unknown date'
+        
+        # Display podcast info
+        st.markdown(f"""
+        <div class="content-section">
+            <div class="content-title">{selected_podcast['title']}</div>
+            <div class="content-meta">📅 Published: {formatted_date}</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Display full transcript
+        st.markdown('<h5 class="form-title">📝 Full Transcript</h5>', unsafe_allow_html=True)
+        
+        transcript_content = selected_podcast['transcript_content']
+        
+        # Show the full transcript in a scrollable container
+        st.markdown(f"""
+        <div style="
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            white-space: pre-wrap;
+        ">
+            {transcript_content}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+else:
+    st.info("No podcasts available. Pull some episodes first!")
+    st.markdown("---")
+
 # Content Generation Section
 st.markdown('<h4 class="section-title">🎯 Content Generation</h4>', unsafe_allow_html=True)
 
@@ -1101,114 +1203,10 @@ if selected_transcript_idx is not None and (generate_linkedin or generate_blog o
 # Content Library
 st.markdown('<h4 class="section-title">📚 Content Library</h4>', unsafe_allow_html=True)
 
-# Three column layout: transcripts, LinkedIn posts, and blog posts
-col1, col2, col3 = st.columns(3)
+# Two column layout: LinkedIn posts and blog posts
+col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown('<h5 class="form-title">📝 Podcast Transcripts</h5>', unsafe_allow_html=True)
-    
-    # Show transcript count at the top
-    if transcripts:
-        st.metric("Total Transcripts", len(transcripts))
-        st.markdown("---")
-    
-    if transcripts:
-        # Transcript selector
-        transcript_options = []
-        for i, transcript in enumerate(transcripts):
-            created_at = transcript.get('created_at', '')
-            published_at = transcript.get('published_at', '')
-            date_to_use = published_at or created_at
-            
-            if date_to_use:
-                try:
-                    from datetime import datetime
-                    if 'T' in date_to_use:
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
-                        else:
-                            dt = datetime.fromisoformat(date_to_use)
-                    else:
-                        dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d')
-                except Exception:
-                    date_str = 'Unknown date'
-            else:
-                date_str = 'Unknown date'
-            
-            # Create a truncated title for the dropdown
-            title = transcript['title']
-            if len(title) > 50:
-                title = title[:47] + "..."
-            
-            transcript_options.append(f"{title} ({date_str})")
-        
-        selected_transcript_idx = st.selectbox(
-            "Select Transcript:",
-            range(len(transcript_options)),
-            format_func=lambda x: transcript_options[x],
-            key="transcript_selector"
-        )
-        
-        if selected_transcript_idx is not None:
-            selected_transcript = transcripts[selected_transcript_idx]
-            
-            # Parse date for display
-            created_at = selected_transcript.get('created_at', '')
-            published_at = selected_transcript.get('published_at', '')
-            date_to_use = published_at or created_at
-            
-            if date_to_use:
-                try:
-                    from datetime import datetime
-                    if 'T' in date_to_use:
-                        if date_to_use.endswith('Z'):
-                            dt = datetime.fromisoformat(date_to_use.replace('Z', '+00:00'))
-                        else:
-                            dt = datetime.fromisoformat(date_to_use)
-                    else:
-                        dt = datetime.fromisoformat(date_to_use)
-                    date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except Exception as e:
-                    date_str = date_to_use or 'Unknown date'
-            else:
-                date_str = 'Unknown date'
-            
-            # Display selected transcript
-            st.markdown(f"""
-            <div class="content-display">
-                <div class="content-title">{selected_transcript['title']}</div>
-                <div class="content-meta">Saved: {date_str}</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Show transcript content with expand/collapse
-            transcript_content = selected_transcript['transcript_content']
-            content_key = f"transcript_expanded_{selected_transcript_idx}"
-            
-            if content_key not in st.session_state:
-                st.session_state[content_key] = False
-            
-            # Show preview or full content
-            if len(transcript_content) > 1000:
-                if not st.session_state[content_key]:
-                    preview = transcript_content[:1000] + "..."
-                    st.write(preview)
-                    if st.button(f"See More", key=f"expand_{selected_transcript_idx}"):
-                        st.session_state[content_key] = True
-                        st.rerun()
-                else:
-                    st.write(transcript_content)
-                    if st.button(f"See Less", key=f"collapse_{selected_transcript_idx}"):
-                        st.session_state[content_key] = False
-                        st.rerun()
-            else:
-                st.write(transcript_content)
-        
-    else:
-        st.info("No transcripts available. Pull some episodes first!")
-
-with col2:
     st.markdown('<h5 class="form-title">📱 LinkedIn Posts</h5>', unsafe_allow_html=True)
     
     # Organize posts by type
@@ -1311,7 +1309,7 @@ with col2:
     else:
         st.info("No LinkedIn posts available. Generate some content first!")
 
-with col3:
+with col2:
     st.markdown('<h5 class="form-title">📝 Blog Posts</h5>', unsafe_allow_html=True)
     
     # Organize posts by type
