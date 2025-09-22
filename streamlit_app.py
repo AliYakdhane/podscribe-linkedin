@@ -1100,7 +1100,7 @@ if transcripts:
         </div>
         """, unsafe_allow_html=True)
         
-        # Display full transcript
+        # Display full transcript with copy icon
         st.markdown('<h5 class="form-title">📝 Full Transcript</h5>', unsafe_allow_html=True)
         
         transcript_content = selected_podcast['transcript_content']
