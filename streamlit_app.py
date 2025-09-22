@@ -162,16 +162,53 @@ st.markdown("""
         color: white !important;
         border: none !important;
         border-radius: 6px !important;
-        padding: 0.5rem 1rem !important;
-        font-weight: 600 !important;
+        padding: 0.375rem 0.75rem !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
-        transition: all 0.2s !important;
+        transition: all 0.2s ease !important;
+        margin: 0 !important;
+    }
+    
+    /* Ensure button text is always white */
+    .stButton > button,
+    .stButton > button *,
+    .stButton > button span,
+    .stButton > button div {
+        color: white !important;
+    }
+    
+    /* Remove ALL spacing between button columns */
+    .stColumns > div {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Target the specific form-actions container */
+    .form-actions .stColumns > div {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* Remove any gap between columns */
+    .stColumns {
+        gap: 0 !important;
+    }
+    
+    .form-actions .stColumns {
+        gap: 0 !important;
     }
     
     .stButton > button:hover {
         background: #2563eb !important;
         box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
         transform: translateY(-1px) !important;
+    }
+    
+    .stButton > button:active {
+        background: #1d4ed8 !important;
+        transform: translateY(0) !important;
     }
     
     /* Input fields */
@@ -647,17 +684,37 @@ st.markdown("""
         border-radius: 6px !important;
     }
     
-    /* Button styling */
+    /* Button styling - consistent with main button styles */
     .stButton > button {
-        background-color: #3b82f6 !important;
-        color: #ffffff !important;
-        border: 1px solid #3b82f6 !important;
+        background: #3b82f6 !important;
+        color: white !important;
+        border: none !important;
         border-radius: 6px !important;
+        padding: 0.375rem 0.75rem !important;
+        font-weight: 500 !important;
+        font-size: 0.875rem !important;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
+        transition: all 0.2s ease !important;
+        margin: 0 !important;
+    }
+    
+    /* Ensure button text is always white - second section */
+    .stButton > button,
+    .stButton > button *,
+    .stButton > button span,
+    .stButton > button div {
+        color: white !important;
     }
     
     .stButton > button:hover {
-        background-color: #2563eb !important;
-        border-color: #2563eb !important;
+        background: #2563eb !important;
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .stButton > button:active {
+        background: #1d4ed8 !important;
+        transform: translateY(0) !important;
     }
 </style>
 
@@ -1111,8 +1168,8 @@ else:
     selected_transcript_idx = None
 
 # Generate content buttons
-st.markdown('<div class="form-actions">', unsafe_allow_html=True)
-col1, col2, col3 = st.columns(3)
+st.markdown('<div class="form-actions" style="display: flex; gap: 0;">', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1, 1, 1], gap="small")
 
 with col1:
     generate_linkedin = st.button("📱 Generate LinkedIn Posts", key="generate_linkedin_global")
