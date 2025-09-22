@@ -355,6 +355,33 @@ st.markdown("""
         color: #1e293b !important;
     }
     
+    /* Custom scrollbar styling for better visibility */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 6px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 6px;
+        border: 2px solid #f1f5f9;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
+    
+    /* Firefox scrollbar styling */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 #f1f5f9;
+    }
+    
     /* Fix select box styling for production - comprehensive approach */
     .stSelectbox > div > div {
         background-color: #ffffff !important;
@@ -1029,12 +1056,16 @@ if transcripts:
             border-radius: 8px;
             padding: 1rem;
             max-height: 400px;
-            overflow-y: auto;
+            overflow-y: scroll;
+            overflow-x: hidden;
             font-family: 'Source Sans Pro', sans-serif;
             font-size: 14px;
             line-height: 1.6;
             color: #374151;
             white-space: pre-wrap;
+            word-wrap: break-word;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 #f7fafc;
         ">
             {transcript_content}
         </div>
