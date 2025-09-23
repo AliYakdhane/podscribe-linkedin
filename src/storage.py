@@ -254,12 +254,8 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
         else:
             published_at_value = None
             
-        # Generate a unique ID for this specific post (allows multiple posts per transcript)
-        import uuid
-        post_id = str(uuid.uuid4())
-        
+        # Don't specify ID - let Supabase auto-generate it
         row = {
-            "id": post_id,  # Unique ID for this specific post
             "guid": guid,   # Original transcript GUID for linking
             "title": title,
             "published_at": published_at_value,
@@ -269,10 +265,9 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
         }
         
         print(f"  📤 Supabase: Sending insert request to table '{table}'")
-        print(f"  📤 Supabase: Post ID: {post_id}")
         print(f"  📤 Supabase: Row data: {row}")
         
-        # Try insert first
+        # Try insert only (no update needed since we're not specifying ID)
         try:
             resp = client.table(table).insert(row).execute()
             print(f"  📤 Supabase: Insert successful")
@@ -280,17 +275,8 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
             print(f"  ✅ Supabase: Successfully stored posts for '{title}'")
             return True
         except Exception as insert_error:
-            print(f"  📤 Supabase: Insert failed, trying update: {insert_error}")
-            # If insert fails, try update
-            try:
-                resp = client.table(table).update(row).eq("id", post_id).execute()
-                print(f"  📤 Supabase: Update successful")
-                print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
-                print(f"  ✅ Supabase: Successfully updated posts for '{title}'")
-                return True
-            except Exception as update_error:
-                print(f"  ❌ Supabase: Both insert and update failed: {update_error}")
-                return False
+            print(f"  ❌ Supabase: Insert failed: {insert_error}")
+            return False
     except Exception as ex:
         print(f"  ❌ Supabase posts storage failed: {ex}")
         print(f"  ❌ Supabase: Error type: {type(ex).__name__}")
