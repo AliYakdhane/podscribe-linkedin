@@ -934,6 +934,25 @@ def load_transcripts_from_supabase():
                     del transcript['chunks']
                     final_transcripts.append(transcript)
                 
+                # Sort by published_at (newest first), fallback to created_at if published_at is missing
+                from datetime import datetime
+                def get_sort_date(transcript):
+                    date_str = transcript.get('published_at') or transcript.get('created_at', '')
+                    if not date_str:
+                        return datetime.min
+                    try:
+                        if 'T' in date_str:
+                            if date_str.endswith('Z'):
+                                return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                            else:
+                                return datetime.fromisoformat(date_str)
+                        else:
+                            return datetime.fromisoformat(date_str)
+                    except Exception:
+                        return datetime.min
+                
+                final_transcripts.sort(key=get_sort_date, reverse=True)
+                
                 return final_transcripts
             else:
                 return []
