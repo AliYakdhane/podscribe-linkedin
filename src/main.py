@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import List
 
@@ -17,16 +18,28 @@ def _sanitize_filename(name: str) -> str:
     return re.sub(r"[^a-zA-Z0-9._-]+", "_", name).strip("._") or "episode"
 
 
-def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateStore, max_episodes: int) -> List:
-    """Find episodes to process based on intelligent selection logic."""
+def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateStore, max_episodes: int, min_date=None) -> List:
+    """Find episodes to process based on intelligent selection logic.
+    
+    Args:
+        episodes_sorted: List of episodes sorted by date (newest first)
+        starting_dt: Optional starting date from Apple episode URL
+        state: StateStore to check processed episodes
+        max_episodes: Maximum episodes to process (0 = unlimited)
+        min_date: Minimum date to process episodes from (default: November 22, 2024)
+    """
+    # Default minimum date: November 22, 2024
+    if min_date is None:
+        min_date = datetime(2024, 11, 22)
+    
     episodes_to_process = []
     
     if starting_dt is not None:
         # If we have a starting date (from Apple episode URL), find episodes between that date and newest
         print(f"🔍 Looking for episodes between {starting_dt.isoformat()} and newest...")
         
-        # Find episodes newer than the starting date
-        newer_episodes = [e for e in episodes_sorted if e.published and e.published > starting_dt]
+        # Find episodes newer than the starting date and after minimum date
+        newer_episodes = [e for e in episodes_sorted if e.published and e.published > starting_dt and e.published >= min_date]
         print(f"📊 Found {len(newer_episodes)} episodes newer than the specified episode URL")
         
         if not newer_episodes:
@@ -47,9 +60,9 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
             print("ℹ️ All episodes newer than the specified episode URL have already been processed.")
             print("🔄 Falling back to newest unprocessed episodes...")
             
-            # Fallback: look for any unprocessed episodes (not just newer than the URL)
+            # Fallback: look for any unprocessed episodes (not just newer than the URL) but after min_date
             for e in episodes_sorted:
-                if not state.is_processed(e.guid):
+                if not state.is_processed(e.guid) and e.published and e.published >= min_date:
                     episodes_to_process.append(e)
                     # Only break if max_episodes is set (> 0), otherwise process all
                     if max_episodes > 0 and len(episodes_to_process) >= max_episodes:
@@ -74,11 +87,12 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
             print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'})")
         
     else:
-        # No starting date - use the old logic (newest episodes)
-        print("🔍 Looking for newest unprocessed episodes...")
+        # No starting date - use the old logic (newest episodes) but filter by min_date
+        print(f"🔍 Looking for newest unprocessed episodes (from {min_date.date().isoformat()} onwards)...")
         
         for e in episodes_sorted:
-            if not state.is_processed(e.guid):
+            # Only process episodes that are unprocessed and after the minimum date
+            if not state.is_processed(e.guid) and e.published and e.published >= min_date:
                 episodes_to_process.append(e)
                 # Only break if max_episodes is set (> 0), otherwise process all
                 if max_episodes > 0 and len(episodes_to_process) >= max_episodes:
@@ -189,8 +203,9 @@ def run() -> None:
     # Process newest first
     episodes_sorted = sort_episodes(episodes)
 
-    # Use intelligent episode selection
-    episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, max_episodes)
+    # Use intelligent episode selection (with minimum date of November 22, 2024)
+    min_date = datetime(2024, 11, 22)
+    episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, max_episodes, min_date)
 
     if not episodes_to_process:
         print("No new episodes to process.")
