@@ -26,11 +26,11 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
         starting_dt: Optional starting date from Apple episode URL
         state: StateStore to check processed episodes
         max_episodes: Maximum episodes to process (0 = unlimited)
-        min_date: Minimum date to process episodes from (default: November 22, 2024)
+        min_date: Minimum date to process episodes from (default: November 22, 2025)
     """
-    # Default minimum date: November 22, 2024
+    # Default minimum date: November 22, 2025
     if min_date is None:
-        min_date = datetime(2024, 11, 22)
+        min_date = datetime(2025, 11, 22)
     
     episodes_to_process = []
     
@@ -203,8 +203,8 @@ def run() -> None:
     # Process newest first
     episodes_sorted = sort_episodes(episodes)
 
-    # Use intelligent episode selection (with minimum date of November 22, 2024)
-    min_date = datetime(2024, 11, 22)
+    # Use intelligent episode selection (with minimum date of November 22, 2025)
+    min_date = datetime(2025, 11, 22)
     episodes_to_process = _find_episodes_to_process(episodes_sorted, starting_dt, state, max_episodes, min_date)
 
     if not episodes_to_process:
