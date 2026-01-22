@@ -9,7 +9,7 @@ from .config import load_config
 from .apple import extract_show_id_from_apple_url, lookup_feed_url_via_itunes, parse_feed_entries, fetch_feed_xml, sort_episodes, extract_episode_id_from_apple_url, lookup_episode_release_and_show_id
 from .transcripts import get_transcript_text
 from .posts import generate_linkedin_posts
-from .storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts
+from .storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts, load_processed_guids_from_supabase
 from .config_manager import get_user_config
 
 
@@ -164,7 +164,22 @@ def run() -> None:
 
     state = StateStore(cfg.data_dir / "state.json")
 
-    # Supabase is already initialized above
+    # If state file is empty or doesn't exist and Supabase is available, sync processed GUIDs from Supabase
+    state_file_exists = state.state_file.exists()
+    if (not state_file_exists or len(state.processed_guids) == 0) and supabase_client is not None:
+        if not state_file_exists:
+            print("📥 State file doesn't exist, loading processed episodes from Supabase...")
+        else:
+            print("📥 State file is empty, loading processed episodes from Supabase...")
+        supabase_guids = load_processed_guids_from_supabase(supabase_client, cfg.supabase_table_transcripts)
+        if supabase_guids:
+            print(f"✅ Synced {len(supabase_guids)} processed episodes from Supabase to local state")
+            # Add all Supabase GUIDs to state
+            for guid in supabase_guids:
+                state.processed_guids.add(guid)
+            state._save()  # Save the synced state
+        else:
+            print("ℹ️ No processed episodes found in Supabase, starting fresh")
 
     # Process newest first
     episodes_sorted = sort_episodes(episodes)

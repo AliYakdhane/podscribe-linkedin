@@ -115,6 +115,38 @@ def ensure_tables_exist(client) -> None:
         print(f"  ❌ Supabase: Traceback: {traceback.format_exc()}")
 
 
+def load_processed_guids_from_supabase(client, table: str = "podcast_transcripts") -> Set[str]:
+    """Load all processed episode GUIDs from Supabase.
+    
+    This is useful when state.json doesn't exist (e.g., in GitHub Actions).
+    Returns a set of GUIDs that have been processed.
+    """
+    try:
+        print(f"  🔍 Supabase: Loading processed episode GUIDs from '{table}' table...")
+        # Get all unique GUIDs from transcripts table (excluding chunks)
+        # Chunks have guid like "original_guid_chunk_1", so we filter those out
+        response = client.table(table).select("guid, original_guid").execute()
+        
+        processed_guids = set()
+        for row in response.data:
+            guid = row.get("guid", "")
+            original_guid = row.get("original_guid", "")
+            
+            # Use original_guid if available (for chunks), otherwise use guid
+            if original_guid and original_guid != guid:
+                processed_guids.add(original_guid)
+            elif guid:
+                # Only add if it's not a chunk (chunks have "_chunk_" in the guid)
+                if "_chunk_" not in guid:
+                    processed_guids.add(guid)
+        
+        print(f"  ✅ Supabase: Found {len(processed_guids)} processed episodes in database")
+        return processed_guids
+    except Exception as ex:
+        print(f"  ⚠️ Supabase: Failed to load processed GUIDs: {ex}")
+        return set()
+
+
 def _chunk_content(content: str, max_size: int = 20_000_000) -> list[str]:
     """Split content into chunks that fit within size limits."""
     if len(content.encode('utf-8')) <= max_size:
