@@ -49,12 +49,15 @@ jobs:
           export OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
           export SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
           export SUPABASE_SERVICE_ROLE="${{ secrets.SUPABASE_SERVICE_ROLE }}"
+          # Process all unprocessed episodes (0 = unlimited)
+          export MAX_EPISODES_PER_RUN="0"
           
           # Verify they are set
           echo "🔍 After export:"
           echo "  SUPABASE_URL: ${SUPABASE_URL:0:20}..."
           echo "  SUPABASE_SERVICE_ROLE: ${SUPABASE_SERVICE_ROLE:0:20}..."
           echo "  OPENAI_API_KEY: ${OPENAI_API_KEY:0:20}..."
+          echo "  MAX_EPISODES_PER_RUN: ${MAX_EPISODES_PER_RUN}"
           
           python -m src.main
           echo "✅ Podcast pull completed"
