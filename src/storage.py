@@ -264,18 +264,18 @@ def store_posts(client, table: str, guid: str, title: str, published_at: Optiona
             "created_at": datetime.now().isoformat(),  # Timestamp when post was created
         }
         
-        print(f"  📤 Supabase: Sending insert request to table '{table}'")
+        print(f"  📤 Supabase: Sending upsert request to table '{table}'")
         print(f"  📤 Supabase: Row data: {row}")
         
-        # Try insert only (no update needed since we're not specifying ID)
+        # Use upsert to handle duplicates (update if exists, insert if new)
         try:
-            resp = client.table(table).insert(row).execute()
-            print(f"  📤 Supabase: Insert successful")
+            resp = client.table(table).upsert(row, on_conflict="guid").execute()
+            print(f"  📤 Supabase: Upsert successful")
             print(f"  📤 Supabase: Response data: {getattr(resp, 'data', 'No data')}")
             print(f"  ✅ Supabase: Successfully stored posts for '{title}'")
             return True
-        except Exception as insert_error:
-            print(f"  ❌ Supabase: Insert failed: {insert_error}")
+        except Exception as upsert_error:
+            print(f"  ❌ Supabase: Upsert failed: {upsert_error}")
             return False
     except Exception as ex:
         print(f"  ❌ Supabase posts storage failed: {ex}")
