@@ -51,7 +51,8 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
             for e in episodes_sorted:
                 if not state.is_processed(e.guid):
                     episodes_to_process.append(e)
-                    if len(episodes_to_process) >= max_episodes:
+                    # Only break if max_episodes is set (> 0), otherwise process all
+                    if max_episodes > 0 and len(episodes_to_process) >= max_episodes:
                         break
             
             if episodes_to_process:
@@ -63,8 +64,11 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
             
             return episodes_to_process
         
-        # Take up to max_episodes
-        episodes_to_process = unprocessed_newer[:max_episodes]
+        # Take up to max_episodes (if set, otherwise take all)
+        if max_episodes > 0:
+            episodes_to_process = unprocessed_newer[:max_episodes]
+        else:
+            episodes_to_process = unprocessed_newer
         print(f"📋 Selected {len(episodes_to_process)} episodes to process:")
         for i, e in enumerate(episodes_to_process):
             print(f"  {i+1}. {e.title} ({e.published.isoformat() if e.published else 'No date'})")
@@ -76,7 +80,8 @@ def _find_episodes_to_process(episodes_sorted: List, starting_dt, state: StateSt
         for e in episodes_sorted:
             if not state.is_processed(e.guid):
                 episodes_to_process.append(e)
-                if len(episodes_to_process) >= max_episodes:
+                # Only break if max_episodes is set (> 0), otherwise process all
+                if max_episodes > 0 and len(episodes_to_process) >= max_episodes:
                     break
         
         if not episodes_to_process:
