@@ -7,6 +7,7 @@ Optional: set PULL_LATEST_ON_STARTUP=1 to pull newest episodes for all podcasts 
 import os
 import sys
 import subprocess
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -65,28 +66,19 @@ app.include_router(posts.router, prefix="/api/posts", tags=["posts"])
 
 @app.on_event("startup")
 def startup_pull_latest():
-    """Startup hook: immediate pull, plus 6h scheduler."""
-    max_per = os.getenv("PULL_LATEST_MAX_PER_PODCAST", "5").strip() or "5"
-    if not max_per.isdigit():
-        max_per = "5"
-    print(
-        "Startup: pulling newest episodes for all podcasts in background "
-        f"(max {max_per} per podcast)."
-    )
-    try:
-        subprocess.run(
-            [sys.executable, str(ROOT / "backend" / "scripts" / "pull_all_new.py"), "--max-per-podcast", max_per],
-            cwd=str(ROOT),
-            env=os.environ,
-            timeout=60 * 60,
-        )
-    except Exception as e:
-        print(f"Initial pull_all_new.py on startup failed: {e}")
-
+    """Startup hook: start scheduler; first pull runs shortly after startup."""
+    # Start APScheduler if not already running
     if not scheduler.running:
         scheduler.start()
+        # Interval job every 6 hours
         scheduler.add_job(run_pull_script, "interval", hours=6)
-        print("APScheduler started: pull_all_new.py scheduled every 6 hours.")
+        # One-shot job a few seconds after startup so app can finish loading first
+        scheduler.add_job(
+            run_pull_script,
+            "date",
+            run_date=datetime.utcnow() + timedelta(seconds=5),
+        )
+        print("APScheduler started: pull_all_new.py scheduled every 6 hours (first run shortly after startup).")
 
 
 @app.on_event("shutdown")
