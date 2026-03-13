@@ -16,5 +16,5 @@ RUN pip install --no-cache-dir -r requirements-backend.txt
 COPY . .
 
 # Default command: run FastAPI backend
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
