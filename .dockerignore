@@ -1,0 +1,15 @@
+# Backend/pull image: exclude UI and dev files
+.env
+.env.*
+!.env.example
+*.pyc
+__pycache__
+.git
+.gitignore
+node_modules
+frontend
+streamlit_app.py
+recover_work.py
+.cursor
+.venv
+venv

@@ -1,0 +1,104 @@
+<header class="header">
+  <div class="header-inner">
+    <h1 class="logo">Podcast AI Studio</h1>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      (click)="showMobileMenu.set(!showMobileMenu())"
+      aria-label="Toggle podcast menu"
+    >
+      <span class="menu-toggle-label">Podcasts</span>
+      <span class="menu-chevron" [class.open]="showMobileMenu()"></span>
+    </button>
+
+    <nav class="podcast-nav" aria-label="Podcasts" [class.is-open]="showMobileMenu()">
+      <ul class="podcast-list">
+        @for (p of podcastTabs; track p.id) {
+          <li>
+            <a
+              href="#"
+              class="podcast-item"
+              [class.active]="currentPodcast() === p.id"
+              (click)="setPodcast(p.id); $event.preventDefault()"
+            >{{ p.label }}</a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <button type="button" class="logout-btn" (click)="auth.logout()">Log out</button>
+  </div>
+</header>
+
+<main class="main">
+  @if (loading()) {
+    <div class="loading-overlay" aria-live="polite" aria-busy="true">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading podcast data…</div>
+    </div>
+  }
+
+  @if (!loading()) {
+    @if (error()) {
+      <div class="alert-error" role="alert">{{ error() }}</div>
+    }
+
+    @if (transcripts().length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon">🎙️</div>
+        <h2>No episodes yet</h2>
+        <p>Transcripts will appear here once episodes are pulled.</p>
+      </div>
+    } @else {
+      <div class="layout">
+        <aside class="sidebar">
+          <h2 class="sidebar-title">
+            Episodes
+            <span class="sidebar-count">({{ transcripts().length }})</span>
+          </h2>
+          <div class="episode-list">
+            @for (t of transcripts(); track t.guid) {
+              <button
+                type="button"
+                class="episode-item"
+                [class.active]="selectedTranscript?.guid === t.guid"
+                (click)="onSelectTranscriptGuid(t.guid)"
+              >
+                <span class="episode-item-title">{{ t.title.length > 50 ? t.title.slice(0, 47) + '…' : t.title }}</span>
+                <span class="episode-item-date">{{ formatTranscriptDate(t) }}</span>
+                @if (transcripts()[0].guid === t.guid) {
+                  <span class="episode-badge">Latest</span>
+                }
+              </button>
+            }
+          </div>
+        </aside>
+
+        <article class="content">
+          @if (selectedTranscript) {
+            <div class="transcript-hero">
+              <span class="transcript-label">Transcript</span>
+              @if (transcripts()[0].guid === selectedTranscript.guid) {
+                <span class="pill">Latest</span>
+              }
+              <button type="button" class="copy-btn" (click)="copyTranscript()" title="Copy full transcript" aria-label="Copy full transcript">
+                @if (copyDone()) {
+                  <span class="copy-done">Copied!</span>
+                } @else {
+                  <svg class="copy-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                }
+              </button>
+            </div>
+            <h2 class="transcript-title">{{ selectedTranscript.title }}</h2>
+            <p class="transcript-meta">Published {{ formatTranscriptDate(selectedTranscript) }}</p>
+            <div class="transcript-body">{{ selectedTranscript.transcript_content }}</div>
+          }
+        </article>
+      </div>
+    }
+  }
+</main>

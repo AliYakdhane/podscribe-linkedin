@@ -10,15 +10,15 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Add project root to path (for backend.core)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from src.config import load_config
-from src.apple import lookup_feed_url_via_itunes, parse_feed_entries, fetch_feed_xml, sort_episodes
-from src.transcripts import get_transcript_text
-from src.posts import generate_linkedin_posts
-from src.storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts
-from src.config_manager import get_user_config
+from backend.core.config import load_config
+from backend.core.apple import lookup_feed_url_via_itunes, parse_feed_entries, fetch_feed_xml, sort_episodes
+from backend.core.transcripts import get_transcript_text
+from backend.core.posts import generate_linkedin_posts
+from backend.core.storage import StateStore, build_supabase_client, ensure_tables_exist, store_transcript, store_posts
+from backend.core.config_manager import get_user_config
 import re
 
 
@@ -159,7 +159,8 @@ def main():
                     e.guid,
                     e.title,
                     e.published,
-                    transcript_text
+                    transcript_text,
+                    config_id=os.getenv("PODCAST_CONFIG_ID") or "apple",
                 )
                 if success:
                     print(f"  ✅ Transcript uploaded to Supabase")
