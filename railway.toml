@@ -9,5 +9,5 @@ packages = ["ffmpeg"]
 [services.backend]
   # FastAPI backend service
   root = "."
-  start = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+  start = "ffmpeg -version && uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
 
