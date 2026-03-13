@@ -9,7 +9,8 @@ import sys
 import subprocess
 from pathlib import Path
 
-# Load .env from project root
+from apscheduler.schedulers.background import BackgroundScheduler
+
 ROOT = Path(__file__).resolve().parents[1]
 try:
     from dotenv import load_dotenv
@@ -17,9 +18,23 @@ try:
 except Exception:
     pass
 
-# Ensure project root is on path (for backend.core and backend.routers)
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+scheduler = BackgroundScheduler()
+
+
+def run_pull_script():
+    """Run the pull_all_new script from inside the web process."""
+    try:
+        subprocess.run(
+            [sys.executable, str(ROOT / "backend" / "scripts" / "pull_all_new.py")],
+            cwd=str(ROOT),
+            env=os.environ,
+            timeout=60 * 60,
+        )
+    except Exception as e:
+        print(f"Background pull_all_new.py failed: {e}")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,25 +65,31 @@ app.include_router(posts.router, prefix="/api/posts", tags=["posts"])
 
 @app.on_event("startup")
 def startup_pull_latest():
-    """If PULL_LATEST_ON_STARTUP=1, pull newest episodes for all podcasts in the background."""
-    if os.getenv("PULL_LATEST_ON_STARTUP", "").strip() != "1":
-        return
+    """Startup hook: immediate pull, plus 6h scheduler."""
     max_per = os.getenv("PULL_LATEST_MAX_PER_PODCAST", "5").strip() or "5"
     if not max_per.isdigit():
         max_per = "5"
-    print("PULL_LATEST_ON_STARTUP=1: pulling newest episodes for all podcasts in background (max %s per podcast)." % max_per)
+    print(
+        "Startup: pulling newest episodes for all podcasts in background "
+        f"(max {max_per} per podcast)."
+    )
+    try:
+        subprocess.run(
+            [sys.executable, str(ROOT / "backend" / "scripts" / "pull_all_new.py"), "--max-per-podcast", max_per],
+            cwd=str(ROOT),
+            env=os.environ,
+            timeout=60 * 60,
+        )
+    except Exception as e:
+        print(f"Initial pull_all_new.py on startup failed: {e}")
 
-    def run():
-        try:
-            subprocess.run(
-                [sys.executable, str(ROOT / "backend" / "scripts" / "pull_all_new.py"), "--max-per-podcast", max_per],
-                cwd=str(ROOT),
-                env=os.environ,
-                timeout=60 * 60,
-            )
-        except Exception:
-            pass
+    if not scheduler.running:
+        scheduler.start()
+        scheduler.add_job(run_pull_script, "interval", hours=6)
+        print("APScheduler started: pull_all_new.py scheduled every 6 hours.")
 
-    import threading
-    t = threading.Thread(target=run, daemon=True)
-    t.start()
+
+@app.on_event("shutdown")
+def shutdown_scheduler():
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
