@@ -6,8 +6,9 @@ providers = ["apt"]
 [build.apt]
 packages = ["ffmpeg"]
 
-[services.backend]
-  # FastAPI backend service
-  root = "."
-  start = "ffmpeg -version && uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+[build.python]
+# Your Python config here if needed
 
+[services.backend]
+root = "."
+start = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
