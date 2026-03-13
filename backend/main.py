@@ -34,14 +34,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    # Local dev
-    allow_origins=[
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
-    ],
-    # Any Vercel frontend under *.vercel.app (including your podcast-ai-studio URL)
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
+    allow_origins=["*"],      # allow any origin
+    allow_credentials=False,  # must be False with "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
