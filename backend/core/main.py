@@ -249,6 +249,10 @@ def run() -> None:
             print(f"  Failed to get transcript: {ex}")
             continue
 
+        if not transcript_text or not transcript_text.strip():
+            print("  ⚠️ Transcript text is empty; skipping Supabase storage and state update for this episode.")
+            continue
+
         # Save transcript using full episode title
         base_name = _sanitize_filename(e.title)
         transcript_path = cfg.transcripts_dir / f"{base_name}.txt"

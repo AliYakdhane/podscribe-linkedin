@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: '/api', // or your deployed API URL
+  apiUrl: 'https://podscribe-linkedin-production.up.railway.app',
 };
